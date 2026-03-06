@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Productivity Sidekick</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* --- MODERN TRENDING THEME (Slate & Indigo) --- */
+        :root {
+            --bg-home: #f8fafc;        
+            --bg-template: #ffffff;    
+            --color-dark: #334155;     
+            --color-text: #0f172a;     
+            --color-text-muted: #64748b; 
+            --color-primary: #6366f1;  
+            --color-primary-hover: #4f46e5; 
+            --color-border: #e2e8f0;   
+            --color-danger: #ef4444;   
+            --color-success: #10b981;  
+            --color-warning: #f59e0b;  
+            
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --radius-md: 6px;
+            --radius-lg: 10px;
+        }
+
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: var(--bg-home); margin: 0; padding: 16px; color: var(--color-text); overflow-x: hidden; font-size: 14px; line-height: 1.5; }
+        .container { width: 100%; max-width: 1900px; margin: auto; position: relative; }
+        
+        /* Modern Compact Header & Navigation */
+        .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px;}
+        h1 { margin: 0; font-size: 1.4em; color: var(--color-text); letter-spacing: -0.5px; font-weight: 800; display: flex; align-items: center; gap: 8px;}
+        .app-icon { background: var(--color-primary); color: white; padding: 4px 6px; border-radius: 6px; font-size: 0.85em; }
+
+        .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        
+        /* Buttons & Inputs */
+        button { background-color: var(--color-primary); color: white; border: none; cursor: pointer; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-md); transition: all 0.2s; font-size: 0.9em; box-shadow: var(--shadow-sm);}
+        button:hover { background-color: var(--color-primary-hover); box-shadow: var(--shadow-md); transform: translateY(-1px);}
+        button:active { transform: translateY(1px); box-shadow: none; }
+        button.secondary { background-color: var(--bg-template); color: var(--color-text); border: 1px solid var(--color-border); box-shadow: none; }
+        button.secondary:hover { background-color: var(--bg-home); border-color: var(--color-text-muted); }
+        button.danger { background-color: var(--color-danger); color: white; border: none;}
+        button.danger:hover { background-color: #dc2626; }
+        
+        input, select, textarea { padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); box-sizing: border-box; font-size: 0.9em; font-family: inherit; background: var(--bg-template); color: var(--color-text); transition: border-color 0.2s, box-shadow 0.2s;}
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);}
+
+        /* Modern Dropdown Menu */
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 115%; background-color: var(--bg-template); min-width: 240px; box-shadow: var(--shadow-lg); z-index: 2000; border-radius: var(--radius-lg); border: 1px solid var(--color-border); flex-direction: column; padding: 8px 0;}
+        .dropdown-content.show { display: flex; }
+        .dropdown-item { padding: 10px 16px; color: var(--color-text); text-decoration: none; font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-item:hover { background-color: var(--bg-home); color: var(--color-primary); }
+        .dropdown-item.danger-text { color: var(--color-danger); border-top: 1px solid var(--color-border); margin-top: 4px; padding-top: 10px;}
+        .dropdown-item.danger-text:hover { color: white; background-color: var(--color-danger); }
+
+        /* Layout Architecture */
+        .layout { display: flex; gap: 20px; align-items: flex-start; height: calc(100vh - 90px); }
+        
+        /* Free-Form Main Content */
+        .main-content { flex: 1; min-width: 0; position: relative; height: 100%; overflow: auto; border-radius: var(--radius-lg); transition: background 0.2s; }
+        
+        /* Denser 20px Visual Grid */
+        .main-content.show-grid { 
+            background-size: 20px 20px; 
+            background-image: linear-gradient(to right, rgba(99, 102, 241, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(99, 102, 241, 0.1) 1px, transparent 1px); 
+            background-color: var(--bg-template);
+            border: 1px dashed var(--color-primary);
+        }
+        
+        /* Thinner Static Right Sidebar */
+        .sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; position: sticky; top: 0; height: 100%; overflow-y: auto; padding-right: 6px; padding-bottom: 20px;}
+        .sidebar::-webkit-scrollbar, .main-content::-webkit-scrollbar { width: 6px; height: 6px; }
+        .sidebar::-webkit-scrollbar-thumb, .main-content::-webkit-scrollbar-thumb { background-color: var(--color-border); border-radius: 10px; }
+        .sidebar::-webkit-scrollbar-thumb:hover { background-color: var(--color-text-muted); }
+        
+        @media (max-width: 900px) {
+            .layout { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; position: static; height: auto; overflow-y: visible; }
+            .main-content { min-height: 80vh; }
+        }
+
+        /* --- WIDGET & BUCKET STYLING --- */
+        .widget { background: var(--bg-template); padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--color-border); transition: border-color 0.2s;}
+        .widget-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; margin-bottom: 12px;}
+        .widget-header h3 { margin: 0; color: var(--color-text); font-size: 1.05em; font-weight: 700; display: flex; align-items: center; gap: 6px;}
+        
+        /* Widget Arrows for Ordering */
+        .widget-arrows { display: flex; gap: 4px; }
+        .arrow-btn { background: transparent; color: var(--color-text-muted); border: 1px solid var(--color-border); padding: 2px 6px; font-size: 0.8em; border-radius: 4px; box-shadow: none; cursor: pointer; transition: all 0.2s;}
+        .arrow-btn:hover { background: var(--bg-home); color: var(--color-primary); border-color: var(--color-primary); transform: translateY(0);}
+        .arrow-btn:active { background: var(--color-border); }
+
+        /* Sidebar Tool List Menu Items (Config) */
+        .order-list-container { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px; margin-top: 5px;}
+        .order-item { background: var(--bg-template); border: 1px solid var(--color-border); padding: 6px 10px; border-radius: var(--radius-md); font-size: 0.85em; font-weight: 600; cursor: grab; display: flex; justify-content: flex-start; align-items: center; gap: 10px; transition: background 0.2s;}
+        .order-item:hover { background: var(--bg-home); border-color: var(--color-text-muted); }
+        .order-item:active { cursor: grabbing; }
+        .order-item.drag-over { border-top: 2px solid var(--color-primary); }
+        .order-item .drag-icon { color: var(--color-text-muted); font-size: 1.2em; }
+
+        /* Compact Free-Form Buckets */
+        .category { position: absolute; background: var(--bg-template); padding: 12px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--color-border); border-top: 3px solid var(--color-primary); height: fit-content; resize: both; overflow: hidden; width: 300px; min-width: 220px; min-height: 120px; box-sizing: border-box; display: flex; flex-direction: column; z-index: 10;}
+        .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; flex-shrink: 0;}
+        .category h2 { font-size: 1.05em; margin: 0; color: var(--color-text); font-weight: 700; display: flex; align-items: center; gap: 8px;}
+        
+        .category.animating { transition: left 0.4s cubic-bezier(0.25, 1, 0.5, 1), top 0.4s cubic-bezier(0.25, 1, 0.5, 1) !important; }
+
+        .drag-handle { cursor: grab; color: var(--color-text-muted); background: var(--bg-home); padding: 4px 6px; border-radius: var(--radius-md); font-size: 0.9em; line-height: 1; user-select: none; transition: all 0.2s; touch-action: none;}
+        .drag-handle:hover { color: white; background: var(--color-primary); }
+        .category.dragging { cursor: grabbing; opacity: 0.95; box-shadow: var(--shadow-lg); z-index: 999 !important; border-color: var(--color-primary);}
+        .category.dragging .drag-handle { cursor: grabbing; color: white; background: var(--color-primary); }
+
+        /* Tools CSS */
+        .pomo-display { font-size: 3em; font-family: 'Inter', monospace; font-weight: 800; text-align: center; margin: 5px 0 15px 0; color: var(--color-text); font-variant-numeric: tabular-nums;}
+        .pomo-controls { display: flex; justify-content: center; gap: 8px; align-items: center; }
+        .pomo-controls input { width: 50px; text-align: center; font-weight: bold; font-size: 1em;}
+
+        .cost-display { font-size: 2.2em; font-family: 'Inter', monospace; font-weight: 800; text-align: center; margin: 5px 0 12px 0; color: var(--color-danger); font-variant-numeric: tabular-nums;}
+        .tool-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; margin-bottom: 10px; gap: 8px;}
+        .tool-row input { width: 60px; padding: 6px; }
+        .tool-row input[type="text"] { width: 100%; padding: 8px; }
+
+        /* Modals & Emoji Grid */
+        dialog { border: none; border-radius: var(--radius-lg); box-shadow: 0 20px 40px rgba(0,0,0,0.2); max-width: 450px; width: 90%; padding: 24px; background: var(--bg-template); color: var(--color-text);}
+        dialog::backdrop { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(3px); }
+        .dialog-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 16px;}
+        .modal-title-input { font-size: 1.2em; font-weight: 800; color: var(--color-text); border: none; border-bottom: 1px solid transparent; width: 100%; box-sizing: border-box; background: transparent; padding: 2px 0; transition: border-color 0.2s;}
+        .modal-text-input { width: 100%; min-height: 100px; resize: vertical; box-sizing: border-box; padding: 10px; margin-bottom: 16px; }
+
+        .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto; background: var(--bg-home); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-top: 4px; margin-bottom: 8px;}
+        .emoji-btn { text-align: center; cursor: pointer; padding: 4px 0; border-radius: 4px; transition: all 0.2s; font-size: 1.3em; border: 1px solid transparent; user-select: none;}
+        .emoji-btn:hover { background: var(--bg-template); border-color: var(--color-primary); transform: scale(1.15);}
+
+        /* Clocks & Notes */
+        .clocks-container { display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px;}
+        .clock-item { background: var(--bg-home); color: var(--color-text); padding: 10px 12px; border-radius: var(--radius-md); display: flex; flex-direction: column; position: relative; border: 1px solid var(--color-border);}
+        .clock-label { font-size: 0.7em; color: var(--color-text-muted); font-weight: 700; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px;}
+        .clock-time { font-family: monospace; font-size: 1.2em; font-weight: 700; pointer-events: none; font-variant-numeric: tabular-nums;}
+        
+        .notes-list { list-style: none; padding: 0; margin: 12px 0 0 0; display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto;}
+        .note-item { background: var(--bg-home); border-left: 3px solid var(--color-primary); padding: 8px 10px; border-radius: var(--radius-md); font-size: 0.85em; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-top: 1px solid var(--color-border); border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); transition: all 0.2s;}
+        .note-item:hover { background: #f1f5f9; transform: translateX(2px); }
+
+        /* Compact Link Tiles */
+        ul.link-list { list-style-type: none; padding: 0; margin: 0; flex-grow: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overflow-x: hidden; padding-right: 4px;}
+        ul.link-list::-webkit-scrollbar { width: 4px; }
+        ul.link-list::-webkit-scrollbar-thumb { background-color: var(--color-border); border-radius: 4px; }
+
+        li.link-item { display: flex; flex-direction: column; background: var(--bg-home); padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); position: relative; transition: all 0.2s;}
+        li.link-item:hover { box-shadow: var(--shadow-sm); border-color: #cbd5e1; }
+        .link-header { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding-right: 35px; box-sizing: border-box; }
+        
+        .link-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); margin-top: 2px;}
+        .link-icon svg { width: 100%; height: 100%; fill: currentColor; }
+        
+        .link-title { text-decoration: none; color: var(--color-text); font-weight: 600; word-break: break-word; white-space: normal; line-height: 1.3; font-size: 0.9em; }
+        .link-title:hover { text-decoration: underline; color: var(--color-primary); }
+        .link-desc { font-size: 0.8em; color: var(--color-text-muted); margin-top: 4px; margin-left: 24px; line-height: 1.3; word-break: break-word; }
+        
+        /* Pinned Add URL Button inside Bucket */
+        .bucket-add-btn { width: 100%; text-align: center; padding: 8px; cursor: pointer; color: var(--color-text-muted); font-weight: 600; background: transparent; border: 1px dashed var(--color-border); border-radius: var(--radius-md); transition: all 0.2s; font-size: 0.8em; margin-top: 8px; box-shadow: none;}
+        .bucket-add-btn:hover { background: var(--bg-home); border-color: var(--color-primary); color: var(--color-primary); transform: none; box-shadow: none;}
+
+        .hover-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; background: var(--bg-home); padding-left: 4px;}
+        .category-header:hover .hover-actions, .link-item:hover .hover-actions { opacity: 1; pointer-events: auto; }
+        .hover-actions button { padding: 2px 6px; font-size: 0.7em; border-radius: 4px; }
+        @media (hover: none) { .hover-actions { opacity: 0.8; pointer-events: auto; position: static; background: transparent; margin-top: 6px; justify-content: flex-end;} .link-header { padding-right: 0;} }
+        
+        /* Audio Segmented Toggle */
+        .segmented-control { display:flex; background:var(--bg-home); border-radius:var(--radius-md); padding:3px; margin-bottom:12px; border: 1px solid var(--color-border);}
+        .seg-btn { flex:1; border-radius:4px; padding:6px; font-size:0.85em; font-weight:600; border:none; cursor:pointer; transition:all 0.2s; box-shadow: none;}
+        .seg-btn.active { background:var(--bg-template); color:var(--color-primary); box-shadow:var(--shadow-sm); }
+        .seg-btn.inactive { background:transparent; color:var(--color-text-muted); }
+        .seg-btn.inactive:hover { color: var(--color-text); }
+    </style>
+</head>
+<body>
+
+<div class="container" id="appContainer">
+    <div class="header-section">
+        <div class="header-title-group">
+            <h1><span class="app-icon">PS</span> Productivity Sidekick</h1>
+        </div>
+        
+        <div class="toolbar">
+            <button class="secondary" onclick="openBucketModal()">+ Add Bucket</button>
+            <button class="secondary" onclick="promptGlobalAddLink()">+ Add URL</button>
+            <button class="secondary" onclick="autoOrganizeBuckets()" title="Automatically pack and organize lists to fit the window">🪄 Auto-Organize</button>
+            
+            <div class="dropdown">
+                <button class="secondary" onclick="toggleMenu('configDropdown')" id="btnConfigDropdown" style="font-size: 1.1em; padding: 6px 10px;">⚙️</button>
+                <div id="configDropdown" class="dropdown-content">
+                    
+                    <div style="padding: 8px 16px;">
+                        <label style="font-size: 0.75em; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Sidebar Order</label>
+                        <div id="sidebarOrderList" class="order-list-container"></div>
+                    </div>
+
+                    <div style="border-top: 1px solid var(--color-border); margin: 6px 0;"></div>
+
+                    <div class="dropdown-item" onclick="exportData()"><span>📥 Export Backup</span></div>
+                    <div class="dropdown-item" onclick="document.getElementById('importFile').click()"><span>📤 Import Backup</span></div>
+                    <input type="file" id="importFile" style="display:none" onchange="importData(event)" accept=".json">
+                    
+                    <div class="dropdown-item" onclick="toggleDebug()">
+                        <span>🐛 Debug Logging</span>
+                        <span id="debugStatusLabel" style="color:var(--color-text-muted); font-size:0.8em; font-weight:bold;">OFF</span>
+                    </div>
+                    <div class="dropdown-item" onclick="downloadDebugLog()" id="downloadLogBtn" style="display:none;">
+                        <span>💾 Download Debug Log</span>
+                    </div>
+
+                    <div class="dropdown-item danger-text" onclick="resetLayout()"><span>⚠️ Reset Board Position</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layout">
+        <main class="main-content" id="bucketBoard">
+            </main>
+
+        <aside class="sidebar" id="sidebarContainer">
+            </aside>
+    </div>
+</div>
+
+<dialog id="bucketModal">
+    <div class="dialog-header">
+        <h2 id="bucketModalTitle" style="margin:0; color:var(--color-text); font-weight:800; font-size: 1.25em;">Add Bucket</h2>
+        <button class="secondary" style="height: fit-content; padding: 4px 8px; font-size: 0.8em;" onclick="document.getElementById('bucketModal').close()">X</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        <input type="hidden" id="bucketModalOldName">
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Bucket Name <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="bucketModalName" placeholder="e.g. Q3 Reports" style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Bucket Icon</label>
+            <div style="font-size:0.75em; color:var(--color-text-muted); line-height:1.3; margin-top:2px;">Select an emoji to display next to the bucket title.</div>
+            <div class="emoji-grid" id="bucketEmojiGrid"></div>
+            <input type="text" id="bucketModalIcon" placeholder="Optional Emoji" style="width:100%;">
+        </div>
+        <button onclick="saveBucketFromModal()" style="width:100%; margin-top:10px; padding:10px; font-size:1em;">Save Bucket</button>
+    </div>
+</dialog>
+
+<dialog id="linkModal">
+    <div class="dialog-header">
+        <h2 id="linkModalTitle" style="margin:0; color:var(--color-text); font-weight:800; font-size: 1.25em;">Add URL</h2>
+        <button class="secondary" style="height: fit-content; padding: 4px 8px; font-size: 0.8em;" onclick="document.getElementById('linkModal').close()">X</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        <input type="hidden" id="linkModalId">
+        
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Bucket</label>
+            <select id="linkModalCategory" style="width:100%; margin-top:4px; padding: 8px;"></select>
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">URL (Website Link) <span style="color:var(--color-danger)">*</span></label>
+            <input type="url" id="linkModalUrl" placeholder="https://..." style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Title <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="linkModalName" placeholder="E.g., QBR Template" style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Short Description (Optional)</label>
+            <input type="text" id="linkModalDesc" placeholder="Details about this link..." style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Custom Icon (Optional)</label>
+            <div style="font-size:0.75em; color:var(--color-text-muted); margin-top:2px; line-height:1.3;">Leave blank to auto-fetch the website's logo, or pick an emoji:</div>
+            <div class="emoji-grid" id="urlEmojiGrid"></div>
+            <input type="text" id="linkModalIcon" placeholder="Emoji or Image URL" style="width:100%;">
+        </div>
+        
+        <button onclick="saveLinkFromModal()" style="width:100%; margin-top:10px; padding:10px; font-size:1em;">Save URL</button>
+    </div>
+</dialog>
+
+<dialog id="pomoModal">
+    <div class="dialog-header">
+        <div style="flex-grow: 1;">
+            <h2 style="margin:0; color:var(--color-primary); font-weight:800; font-size: 1.25em;">Session Log</h2>
+            <div id="pomoStats" style="font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px;">Time Logged: 0m</div>
+        </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+        <input type="text" id="pomoModalTask" readonly style="background:var(--bg-home); color:var(--color-text); border:none; padding:10px; font-weight:600; border-radius:var(--radius-md);">
+        
+        <div>
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-text);">Was this session successful?</label>
+            <select id="pomoOutcome" style="width:100%; margin-top:4px;" onchange="document.getElementById('failReasonContainer').style.display = this.value === 'Fail' ? 'block' : 'none'">
+                <option value="Success">✅ Yes - Task Completed / Progress Made</option>
+                <option value="Fail">❌ No - Interrupted or Blocked</option>
+            </select>
+        </div>
+
+        <div id="failReasonContainer" style="display:none; padding: 10px; background: #fef2f2; border-radius: var(--radius-md); border: 1px solid #fecaca;">
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-danger);">Reason for Interruption:</label>
+            <select id="pomoFailReason" style="width:100%; margin-top:4px; background: white;">
+                <option value="Interrupted by Co-worker">Interrupted by Co-worker</option>
+                <option value="System Issue / Slow Tools">System Issue / Slow Tools</option>
+                <option value="Personal Emergency">Personal Emergency</option>
+                <option value="Lost Focus / Distracted">Lost Focus / Distracted</option>
+                <option value="Underestimated Scope">Underestimated Scope</option>
+            </select>
+        </div>
+
+        <div>
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-text);">Session Notes</label>
+            <textarea id="pomoNotes" placeholder="Quick notes on blockers or wins..." rows="2" style="width:100%; margin-top:4px;"></textarea>
+        </div>
+
+        <button onclick="savePomoLog()" style="width: 100%; margin-top:8px; font-size: 1em; padding: 10px;">Save to Daily Log</button>
+    </div>
+</dialog>
+
+<dialog id="noteModal">
+    <div class="dialog-header">
+        <div style="flex-grow: 1; margin-right: 15px;">
+            <input type="text" id="modalNoteTitle" class="modal-title-input" placeholder="Note Title">
+            <div id="modalDate" style="font-size: 0.8em; color: var(--color-text-muted); margin-top: 4px;">Date</div>
+        </div>
+        <button class="secondary" style="height: fit-content; padding: 4px 8px; font-size:0.8em;" onclick="document.getElementById('noteModal').close()">Close</button>
+    </div>
+    <textarea id="modalTextEdit" class="modal-text-input" placeholder="Note content..."></textarea>
+    <div style="display: flex; gap: 10px;">
+        <button id="saveNoteEditBtn" style="flex-grow: 1;">Save Changes</button>
+        <button class="danger" id="deleteNoteBtn">Delete</button>
+    </div>
+</dialog>
+
+<script>
+    // --- TECH SUPPORT EMOJI PICKER ---
+    const TECH_EMOJIS = ['🌐','💻','🖥️','📱','🔌','🔋','⚙️','🛠️','🔧','🐛','🐞','🚨','🚑','📞','🎧','🎫','🎟️','📄','📁','📂','📊','📈','🔒','🔓','🔑','⚠️','✅','❌','🔥','🚀','🧠','⚡','💡','📌','📋','☁️','🗑️','💬','📧','📅','🤖','🛡️','🎯','⭐','👍'];
+    
+    function populateEmojis() {
+        const grid1 = document.getElementById('urlEmojiGrid');
+        const grid2 = document.getElementById('bucketEmojiGrid');
+        const html1 = TECH_EMOJIS.map(e => `<div class="emoji-btn" onclick="document.getElementById('linkModalIcon').value='${e}'">${e}</div>`).join('');
+        const html2 = TECH_EMOJIS.map(e => `<div class="emoji-btn" onclick="document.getElementById('bucketModalIcon').value='${e}'">${e}</div>`).join('');
+        if(grid1) grid1.innerHTML = html1;
+        if(grid2) grid2.innerHTML = html2;
+    }
+
+    // --- SILENT DEBUG ENGINE ---
+    let isDebugMode = false;
+    let debugLogs = [];
+    function debugLog(msg) {
+        const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+        const logMsg = `[${timestamp}] ${msg}`;
+        debugLogs.push(logMsg);
+        if (isDebugMode) console.log(logMsg);
+    }
+
+    function toggleDebug() {
+        isDebugMode = !isDebugMode;
+        const lbl = document.getElementById('debugStatusLabel');
+        const dlBtn = document.getElementById('downloadLogBtn');
+        if (isDebugMode) { 
+            lbl.innerText = 'ON'; lbl.style.color = 'var(--color-primary)'; 
+            dlBtn.style.display = 'flex';
+            debugLog("Debug mode activated."); 
+        } 
+        else { 
+            lbl.innerText = 'OFF'; lbl.style.color = 'var(--color-text-muted)'; 
+            dlBtn.style.display = 'none';
+            debugLog("Debug mode deactivated.");
+        }
+    }
+
+    function downloadDebugLog() {
+        const blob = new Blob([debugLogs.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = 'sidekick_debug.txt';
+        a.click(); URL.revokeObjectURL(url);
+    }
+
+    // --- MENU LOGIC ---
+    function toggleMenu(menuId) { 
+        document.getElementById(menuId).classList.toggle('show'); 
+        if(menuId === 'configDropdown' && document.getElementById(menuId).classList.contains('show')) renderToolOrderList();
+    }
+    window.onclick = function(event) {
+        if (!event.target.matches('#btnConfigDropdown') && !event.target.closest('#btnConfigDropdown')) {
+            const dropdowns = document.getElementsByClassName("dropdown-content");
+            for (let i = 0; i < dropdowns.length; i++) { if (dropdowns[i].classList.contains('show') && !dropdowns[i].contains(event.target)) dropdowns[i].classList.remove('show'); }
+        }
+    }
+
+    // --- DEFENSIVE SAFE-LOADERS ---
+    function getArraySafe(key, defaultArr) {
+        try { let val = JSON.parse(localStorage.getItem(key)); let res = Array.isArray(val) ? val.filter(i => i !== null && i !== undefined) : defaultArr; debugLog(`Loaded array [${key}]: ${res.length} items`); return res; } 
+        catch(e) { debugLog(`ERROR loading array [${key}]: ${e.message}`); return defaultArr; }
+    }
+    function getObjectSafe(key, defaultObj) {
+        try { let val = JSON.parse(localStorage.getItem(key)); let res = (val && typeof val === 'object' && !Array.isArray(val)) ? val : defaultObj; debugLog(`Loaded object [${key}]`); return res; } 
+        catch(e) { debugLog(`ERROR loading object [${key}]: ${e.message}`); return defaultObj; }
+    }
+    function saveData(key, data) { localStorage.setItem(key, JSON.stringify(data)); debugLog(`Saved [${key}]`); }
+
+    // --- STATE MANAGEMENT ---
+    let categories = getArraySafe('bs_categories', ["My Links"]);
+    if (categories.length === 0) categories = ["My Links"]; 
+    
+    let links = getArraySafe('bs_links', []);
+    let clocks = getArraySafe('bs_clocks', [{label: 'My Time', tz: 'Local'}]); 
+    let notes = getArraySafe('bs_notes', []);
+    let pomoLogs = getArraySafe('bs_pomoLogs', []);
+    let bucketSizes = getObjectSafe('bs_bucketSizes', {});
+    let bucketIcons = getObjectSafe('bs_bucketIcons', {});
+    
+    const WIDGET_NAMES = { 'focus_review': '⏱️ Focus & Review', 'audio': '🎧 Focus Audio', 'notes': '📝 Quick Notes', 'clocks': '🌍 Time Zones', 'cost': '💸 Meeting Cost' };
+    let sidebarOrder = getArraySafe('bs_sidebarOrder', ['focus_review', 'audio', 'notes', 'clocks', 'cost']);
+    if (!sidebarOrder.includes('focus_review')) sidebarOrder = ['focus_review', 'audio', 'notes', 'clocks', 'cost'];
+
+    let ytLinks = getArraySafe('bs_ytLinks', [{title: "Lofi Girl (Live)", videoId: "jfKfPfyJRdk", listId: null}, {title: "Chillhop (Live)", videoId: "5yx6BWlEVcY", listId: null}]);
+    ytLinks = ytLinks.map(link => { if (link && link.id && !link.videoId) return { title: link.title, videoId: link.id, listId: null }; return link; }).filter(Boolean);
+    let currentYtIndex = parseInt(localStorage.getItem('bs_ytIndex')) || 0;
+    if (currentYtIndex >= ytLinks.length || currentYtIndex < 0) currentYtIndex = 0;
+
+    let currentFocusTask = ""; let currentFocusDetails = "";
+    let pomoTimeLeft = 25 * 60; let pomoTotalTime = 25 * 60; 
+    let pomoTimerId = null; let isPomoRunning = false;
+    let costSeconds = 0; let costTimerId = null; let isCostRunning = false;
+    let currentAudioMode = 'ambient'; let autoPlayAudio = false;
+    let audioCtx, noiseSrc, noiseGain; let isNoisePlaying = false; let isYtPlaying = false;
+
+    // --- Utilities ---
+    const sanitize = (str) => { if (!str) return ''; const t = document.createElement('div'); t.textContent = str; return t.innerHTML; };
+
+    function renderLinkIcon(link) {
+        if (link.customIcon && link.customIcon.trim() !== '') {
+            let iconStr = link.customIcon.trim();
+            if (iconStr.startsWith('http') || iconStr.startsWith('data:')) return `<img src="${sanitize(iconStr)}" style="width:100%; height:100%; border-radius:4px; object-fit:contain;" onerror="this.parentElement.innerHTML='🔗'">`;
+            else return `<span style="font-size:16px; line-height:1; display:flex; align-items:center; justify-content:center;">${sanitize(iconStr)}</span>`;
+        } else {
+            try { let urlStr = link.url.startsWith('http') ? link.url : 'https://' + link.url; let urlObj = new URL(urlStr); return `<img src="https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64" style="width:100%; height:100%; border-radius:4px; object-fit:contain;" onerror="this.parentElement.innerHTML='🔗'">`; } 
+            catch(e) { return `<span style="font-size:14px;">🔗</span>`; }
+        }
+    }
+
+    function extractYTInfo(url) {
+        let videoId = null; let listId = null;
+        let vMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([^&?]+)/); if (vMatch) videoId = vMatch[1];
+        let lMatch = url.match(/[?&]list=([^&?]+)/); if (lMatch) listId = lMatch[1];
+        return { videoId, listId };
+    }
+
+    function getYtSrc(index, autoplay) {
+        const link = ytLinks[index]; if (!link) return '';
+        let origin = window.location.protocol === 'file:' ? 'http://localhost' : window.location.origin;
+        let src = 'https://www.youtube.com/embed/';
+        if (link.videoId) { src += link.videoId + '?'; if (link.listId) src += 'list=' + link.listId + '&'; } 
+        else if (link.listId) { src += 'videoseries?list=' + link.listId + '&'; }
+        src += `autoplay=${autoplay ? 1 : 0}&mute=0&origin=${origin}`;
+        return src;
+    }
+
+    // --- Core Boot Sequence ---
+    function init() {
+        populateEmojis();
+        debugLog("Boot sequence initiated");
+        categories.forEach((cat, index) => {
+            let id = 'cat-' + cat;
+            if (!bucketSizes[id]) bucketSizes[id] = {};
+            let x = parseInt(bucketSizes[id].x); let y = parseInt(bucketSizes[id].y);
+            if (isNaN(x) || x < 0) bucketSizes[id].x = (index % 3) * 340;
+            if (isNaN(y) || y < 0) bucketSizes[id].y = Math.floor(index / 3) * 200;
+        });
+        saveData('bs_bucketSizes', bucketSizes);
+
+        renderSidebar(); renderBuckets(); 
+        setInterval(updateTime, 1000); 
+        debugLog("Boot sequence complete");
+    }
+    document.addEventListener('DOMContentLoaded', init);
+
+    function autoOrganizeBuckets() {
+        const board = document.getElementById('bucketBoard'); const buckets = Array.from(board.querySelectorAll('.category'));
+        if(buckets.length === 0) return;
+        const boardWidth = board.clientWidth - 20; const GRID_SIZE = 20; 
+        let currentX = 0; let currentY = 0; let rowMaxHeight = 0;
+
+        buckets.forEach(el => {
+            el.classList.add('animating'); 
+            let w = Math.ceil(el.offsetWidth / GRID_SIZE) * GRID_SIZE; let h = Math.ceil(el.offsetHeight / GRID_SIZE) * GRID_SIZE;
+            if (currentX + w > boardWidth && currentX > 0) { currentX = 0; currentY += rowMaxHeight + GRID_SIZE; rowMaxHeight = 0; }
+            el.style.left = currentX + 'px'; el.style.top = currentY + 'px';
+            const itemId = el.dataset.id; if(!bucketSizes[itemId]) bucketSizes[itemId] = {}; bucketSizes[itemId].x = currentX; bucketSizes[itemId].y = currentY;
+            currentX += w + GRID_SIZE; rowMaxHeight = Math.max(rowMaxHeight, h);
+            setTimeout(() => { el.classList.remove('animating'); }, 400);
+        });
+        saveData('bs_bucketSizes', bucketSizes);
+    }
+
+    function resetLayout() {
+        if(confirm("This will snap all your lists back into a clean stack on the top left. Continue?")) {
+            categories.forEach((cat, index) => { let id = 'cat-' + cat; if(!bucketSizes[id]) bucketSizes[id] = {}; bucketSizes[id].x = (index % 3) * 340; bucketSizes[id].y = Math.floor(index / 3) * 200; });
+            saveData('bs_bucketSizes', bucketSizes); renderBuckets(); toggleConfig();
+        }
+    }
+
+    // --- SIDEBAR DRAG AND DROP CONFIG LOGIC ---
+    let draggedOrderIndex = null;
+    function renderToolOrderList() {
+        const container = document.getElementById('sidebarOrderList'); if(!container) return; container.innerHTML = '';
+        sidebarOrder.forEach((id, index) => {
+            const div = document.createElement('div'); div.className = 'order-item'; div.draggable = true; div.dataset.index = index;
+            div.innerHTML = `<span class="drag-icon">⠿</span> <span>${WIDGET_NAMES[id]}</span>`;
+            div.addEventListener('dragstart', function(e) { e.stopPropagation(); draggedOrderIndex = parseInt(this.dataset.index); e.dataTransfer.effectAllowed = 'move'; this.style.opacity = '0.5'; });
+            div.addEventListener('dragend', function() { this.style.opacity = '1'; });
+            div.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+            div.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+            div.addEventListener('drop', function(e) { e.preventDefault(); e.stopPropagation(); this.classList.remove('drag-over'); if (draggedOrderIndex === null) return; const targetIdx = parseInt(this.dataset.index); if (draggedOrderIndex !== targetIdx) { const draggedItem = sidebarOrder[draggedOrderIndex]; sidebarOrder.splice(draggedOrderIndex, 1); sidebarOrder.splice(targetIdx, 0, draggedItem); saveData('bs_sidebarOrder', sidebarOrder); renderToolOrderList(); renderSidebar(); } draggedOrderIndex = null; });
+            container.appendChild(div);
+        });
+    }
+
+    function moveWidgetUp(id) { const idx = sidebarOrder.indexOf(id); if (idx > 0) { const temp = sidebarOrder[idx]; sidebarOrder[idx] = sidebarOrder[idx - 1]; sidebarOrder[idx - 1] = temp; saveData('bs_sidebarOrder', sidebarOrder); renderSidebar(); if(document.getElementById('configDropdown').classList.contains('show')) renderToolOrderList(); } }
+    function moveWidgetDown(id) { const idx = sidebarOrder.indexOf(id); if (idx < sidebarOrder.length - 1) { const temp = sidebarOrder[idx]; sidebarOrder[idx] = sidebarOrder[idx + 1]; sidebarOrder[idx + 1] = temp; saveData('bs_sidebarOrder', sidebarOrder); renderSidebar(); if(document.getElementById('configDropdown').classList.contains('show')) renderToolOrderList(); } }
+
+    // --- DYNAMIC SIDEBAR RENDER ENGINE ---
+    function getFocusReviewHtml(widgetId) {
+        const today = new Date().toLocaleDateString(); const todaysLogs = pomoLogs.filter(l => l && l.date === today); const successes = todaysLogs.filter(l => l.outcome === 'Success').length; const rate = todaysLogs.length ? Math.round((successes / todaysLogs.length) * 100) : 0;
+        let color = 'var(--color-primary)'; let emoji = '🎯';
+        if (todaysLogs.length > 0) { if (rate >= 80) { color = 'var(--color-success)'; emoji = rate === 100 ? '🏆' : '🔥'; } else if (rate >= 50) { color = 'var(--color-warning)'; emoji = '👍'; } else { color = 'var(--color-danger)'; emoji = '🚧'; } }
+
+        return `
+            <div class="widget-header">
+                <h3>${WIDGET_NAMES[widgetId]}</h3>
+                <div class="widget-arrows"><button class="arrow-btn" onclick="moveWidgetUp('${widgetId}')" title="Move Up">▲</button><button class="arrow-btn" onclick="moveWidgetDown('${widgetId}')" title="Move Down">▼</button></div>
+            </div>
+            <div class="tool-row" style="flex-direction:column; align-items:stretch; gap:6px; margin-bottom:15px;">
+                <input type="text" id="focusTaskLabel" placeholder="Task Label (e.g. Q3 Report)" value="${sanitize(currentFocusTask)}" oninput="currentFocusTask=this.value" ${isPomoRunning?'disabled':''}>
+                <input type="text" id="focusTaskDetails" placeholder="Short details..." value="${sanitize(currentFocusDetails)}" oninput="currentFocusDetails=this.value" ${isPomoRunning?'disabled':''}>
+            </div>
+            <div class="pomo-display" id="pomoDisplay">25:00</div>
+            <div class="pomo-controls">
+                <input type="number" id="pomoMins" value="${Math.floor(pomoTotalTime/60)}" min="1" max="120" oninput="handlePomoInput(this)" ${isPomoRunning?'disabled':''}>
+                <button onclick="togglePomo()" id="pomoBtn" style="background-color: ${isPomoRunning ? 'var(--color-danger)' : 'var(--color-primary)'}; width: 110px;">${isPomoRunning ? 'Stop / Log' : 'Start'}</button>
+                <button onclick="resetPomo()" id="pomoResetBtn" class="secondary" ${isPomoRunning?'disabled':''}>Reset</button>
+            </div>
+            <div style="margin-top: 25px; padding-top: 20px; border-top: 1px dashed var(--color-border);">
+                <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom: 8px;">
+                    <div style="font-weight: 700; color: var(--color-text); font-size: 0.95em;">Daily Review</div>
+                    <div style="font-weight: 800; color: ${color}; font-size: 1.1em;">${emoji} ${rate}%</div>
+                </div>
+                <div style="font-size: 0.8em; color: var(--color-text-muted); margin-bottom: 8px;">${successes} of ${todaysLogs.length} sessions successful</div>
+                <div style="width: 100%; background: var(--bg-home); border-radius: 4px; height: 8px; margin: 10px 0; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1);">
+                    <div style="width: ${rate}%; background: ${color}; height: 100%; transition: width 0.5s;"></div>
+                </div>
+                <details>
+                    <summary style="cursor: pointer; font-weight: 600; color: var(--color-text-muted); margin-top: 15px; font-size: 0.85em; outline:none; transition: color 0.2s;">View Today's Log History</summary>
+                    <ul style="list-style: none; padding: 0; margin: 10px 0 0 0; max-height: 180px; overflow-y: auto; font-size: 0.85em; display: flex; flex-direction: column; gap: 8px; padding-right: 5px;">
+                        ${todaysLogs.length === 0 ? '<li style="color:var(--color-text-muted);">No sessions logged today.</li>' : ''}
+                        ${todaysLogs.slice().reverse().map(log => `
+                            <li style="background: var(--bg-home); padding: 10px; border-radius: var(--radius-md); border-left: 4px solid ${log.outcome==='Success'?'var(--color-success)':'var(--color-danger)'}; line-height: 1.4;">
+                                <div style="font-weight: 700; word-break: break-word; color: var(--color-text); margin-bottom: 4px;">${log.outcome==='Success'?'✅':'❌'} ${sanitize(log.task)}</div>
+                                <div style="color: var(--color-text-muted); font-size: 0.9em;">${log.minutes}m • ${sanitize(log.reason)}</div>
+                            </li>
+                        `).join('')}
+                    </ul>
+                </details>
+            </div>
+        `;
+    }
+
+    function getAudioHtml(widgetId) {
+        let noiseVolVal = document.getElementById('noiseVol') ? document.getElementById('noiseVol').value : 0.1; let currentNoiseType = document.getElementById('noiseType') ? document.getElementById('noiseType').value : 'brown';
+        return `
+            <div class="widget-header">
+                <h3>${WIDGET_NAMES[widgetId]}</h3>
+                <div class="widget-arrows"><button class="arrow-btn" onclick="moveWidgetUp('${widgetId}')" title="Move Up">▲</button><button class="arrow-btn" onclick="moveWidgetDown('${widgetId}')" title="Move Down">▼</button></div>
+            </div>
+            <div class="segmented-control">
+                <button id="btnModeAmbient" class="seg-btn ${currentAudioMode==='ambient'?'active':'inactive'}" onclick="setAudioMode('ambient')">Ambient</button>
+                <button id="btnModeYoutube" class="seg-btn ${currentAudioMode==='youtube'?'active':'inactive'}" onclick="setAudioMode('youtube')">YouTube</button>
+            </div>
+            <div id="ambientControls" style="display:${currentAudioMode==='ambient'?'block':'none'}">
+                <select id="noiseType" style="width:100%; margin-bottom:12px;">
+                    <option value="brown" ${currentNoiseType==='brown'?'selected':''}>Brown Noise (Deep Focus)</option>
+                    <option value="pink" ${currentNoiseType==='pink'?'selected':''}>Pink Noise (Rainfall)</option>
+                    <option value="white" ${currentNoiseType==='white'?'selected':''}>White Noise (Static)</option>
+                </select>
+                <div class="tool-row">
+                    <input type="range" id="noiseVol" min="0.01" max="0.5" step="0.01" value="${noiseVolVal}" style="flex:1; cursor:pointer;" oninput="updateVolume(this.value)">
+                    <button onclick="toggleNoise()" id="noiseBtn" style="background-color:${isNoisePlaying?'var(--color-danger)':'var(--color-primary)'}; width:80px;">${isNoisePlaying?'Stop':'Play'}</button>
+                </div>
+            </div>
+            <div id="youtubeControls" style="display:${currentAudioMode==='youtube'?'block':'none'}">
+                <div style="display:flex; gap:8px; margin-bottom:12px;">
+                    <select id="ytTrackSelect" style="flex:1;" onchange="changeYtTrack(this.value)">
+                        ${ytLinks.map((link, idx) => `<option value="${idx}" ${currentYtIndex===idx?'selected':''}>${sanitize(link.title)}</option>`).join('')}
+                    </select>
+                    <button onclick="addYtLink()" class="secondary" style="padding: 6px 12px;">+ Add</button>
+                </div>
+                <div id="ytPlayerContainer" style="width:100%; height:160px; background:black; border-radius:var(--radius-md); overflow:hidden; box-shadow: inset var(--shadow-md);">
+                    <iframe id="ytIframe" width="100%" height="160" src="${getYtSrc(currentYtIndex, isYtPlaying)}" frameborder="0" allow="autoplay; clipboard-write; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+                </div>
+            </div>
+            <div style="margin-top:16px; font-size:0.85em; display:flex; align-items:center; gap:8px; color:var(--color-dark); font-weight: 500;">
+                <input type="checkbox" id="autoPlayAudio" ${autoPlayAudio?'checked':''} onchange="autoPlayAudio=this.checked" style="width:auto; margin:0; cursor:pointer; accent-color: var(--color-primary);">
+                <label for="autoPlayAudio" style="cursor:pointer;">Auto-play with Focus Tool</label>
+            </div>
+        `;
+    }
+
+    function getNotesHtml(widgetId) {
+        let quickNoteVal = document.getElementById('quickNoteText') ? document.getElementById('quickNoteText').value : '';
+        return `
+            <div class="widget-header">
+                <h3>${WIDGET_NAMES[widgetId]}</h3>
+                <div class="widget-arrows"><button class="arrow-btn" onclick="moveWidgetUp('${widgetId}')" title="Move Up">▲</button><button class="arrow-btn" onclick="moveWidgetDown('${widgetId}')" title="Move Down">▼</button></div>
+            </div>
+            <textarea id="quickNoteText" class="note-input" rows="2" placeholder="Jot down a quick thought...">${sanitize(quickNoteVal)}</textarea>
+            <button onclick="saveNote()" style="width: 100%; margin-top: 6px;">Save Note</button>
+            <ul class="notes-list" id="notesDisplay"></ul>
+        `;
+    }
+
+    function getClocksHtml(widgetId) {
+        return `
+            <div class="widget-header">
+                <h3>${WIDGET_NAMES[widgetId]}</h3>
+                <div class="widget-arrows"><button class="arrow-btn" onclick="moveWidgetUp('${widgetId}')" title="Move Up">▲</button><button class="arrow-btn" onclick="moveWidgetDown('${widgetId}')" title="Move Down">▼</button></div>
+            </div>
+            <div class="tool-row" style="margin-bottom: 12px;">
+                <select id="timezoneSelect" style="flex:1;">
+                    <option value="America/Vancouver">Pacific Time (PT)</option>
+                    <option value="America/Denver">Mountain Time (MT)</option>
+                    <option value="America/Chicago">Central Time (CT)</option>
+                    <option value="America/New_York">Eastern Time (ET)</option>
+                    <option value="Europe/London">London (GMT/BST)</option>
+                    <option value="Europe/Paris">Central Europe (CET)</option>
+                    <option value="Asia/Tokyo">Tokyo (JST)</option>
+                    <option value="Australia/Sydney">Sydney (AEST)</option>
+                    <option value="UTC">UTC</option>
+                </select>
+                <button onclick="addClock()" class="secondary" style="padding: 6px 12px;">+ Add</button>
+            </div>
+            <div class="clocks-container" id="clocksDisplay"></div>
+        `;
+    }
+
+    function getCostHtml(widgetId) {
+        let costRateVal = document.getElementById('costRate') ? document.getElementById('costRate').value : 100; let costAttVal = document.getElementById('costAttendees') ? document.getElementById('costAttendees').value : 4;
+        return `
+            <div class="widget-header">
+                <h3>${WIDGET_NAMES[widgetId]}</h3>
+                <div class="widget-arrows"><button class="arrow-btn" onclick="moveWidgetUp('${widgetId}')" title="Move Up">▲</button><button class="arrow-btn" onclick="moveWidgetDown('${widgetId}')" title="Move Down">▼</button></div>
+            </div>
+            <div class="cost-display" id="costDisplay">$0.00</div>
+            <div class="tool-row"><label style="font-weight:500;">Avg Rate/hr ($)</label> <input type="number" id="costRate" value="${costRateVal}" ${isCostRunning?'disabled':''}></div>
+            <div class="tool-row"><label style="font-weight:500;">Attendees</label> <input type="number" id="costAttendees" value="${costAttVal}" ${isCostRunning?'disabled':''}></div>
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button onclick="toggleCost()" id="costBtn" style="flex:1; background-color:${isCostRunning?'var(--color-danger)':'var(--color-success)'};">${isCostRunning?'Pause':'Start'}</button>
+                <button onclick="resetCost()" class="secondary">Reset</button>
+            </div>
+        `;
+    }
+
+    function renderSidebar() {
+        const sidebar = document.getElementById('sidebarContainer'); sidebar.innerHTML = '';
+        sidebarOrder.forEach(widgetId => {
+            const div = document.createElement('div'); div.className = 'widget'; div.dataset.id = widgetId;
+            if(widgetId === 'focus_review') div.innerHTML = getFocusReviewHtml(widgetId);
+            else if(widgetId === 'audio') div.innerHTML = getAudioHtml(widgetId);
+            else if(widgetId === 'notes') div.innerHTML = getNotesHtml(widgetId);
+            else if(widgetId === 'clocks') div.innerHTML = getClocksHtml(widgetId);
+            else if(widgetId === 'cost') div.innerHTML = getCostHtml(widgetId);
+            sidebar.appendChild(div);
+        });
+        renderNotes(); renderClocks(); updatePomoDisplay(); updateCostDisplay();
+    }
+
+    // --- AUDIO LOGIC ---
+    function setAudioMode(mode) {
+        currentAudioMode = mode;
+        document.getElementById('ambientControls').style.display = mode === 'ambient' ? 'block' : 'none'; document.getElementById('youtubeControls').style.display = mode === 'youtube' ? 'block' : 'none';
+        document.getElementById('btnModeAmbient').className = mode === 'ambient' ? 'seg-btn active' : 'seg-btn inactive'; document.getElementById('btnModeYoutube').className = mode === 'youtube' ? 'seg-btn active' : 'seg-btn inactive';
+    }
+    function addYtLink() {
+        const url = prompt("Paste YouTube URL (e.g. https://youtube.com/watch?v=...):");
+        if(url) {
+            const { videoId, listId } = extractYTInfo(url);
+            if(videoId || listId) { const title = prompt("Name this stream/playlist:", "New Audio") || "Audio"; ytLinks.push({title, videoId, listId}); saveData('bs_ytLinks', ytLinks); currentYtIndex = ytLinks.length - 1; saveData('bs_ytIndex', currentYtIndex); renderSidebar(); } 
+            else { alert("Invalid YouTube ID."); }
+        }
+    }
+    function changeYtTrack(index) { currentYtIndex = parseInt(index); saveData('bs_ytIndex', currentYtIndex); document.getElementById('ytIframe').src = getYtSrc(currentYtIndex, isYtPlaying); }
+
+    // --- FOCUS TOOL LOGIC ---
+    function handlePomoInput(el) { if (!isPomoRunning) { let val = parseInt(el.value); if (isNaN(val) || val < 1) val = 0; pomoTimeLeft = val * 60; pomoTotalTime = pomoTimeLeft; updatePomoDisplay(); } }
+    function togglePomo() {
+        const btn = document.getElementById('pomoBtn'); const minInput = document.getElementById('pomoMins');
+        const taskInput = document.getElementById('focusTaskLabel'); const detailInput = document.getElementById('focusTaskDetails');
+        if (isPomoRunning) { stopPomo("Finished Early"); } 
+        else {
+            if (document.getElementById('pomoDisplay').innerText === "00:00" || pomoTimeLeft === 0) { let val = parseInt(minInput.value); if (isNaN(val) || val < 1) val = 25; pomoTimeLeft = val * 60; pomoTotalTime = pomoTimeLeft; }
+            isPomoRunning = true; minInput.disabled = true; taskInput.disabled = true; detailInput.disabled = true;
+            btn.innerText = "Stop/Log"; btn.style.backgroundColor = "var(--color-danger)"; document.getElementById('pomoResetBtn').disabled = true;
+            if (autoPlayAudio) { if (currentAudioMode === 'ambient' && !isNoisePlaying) toggleNoise(); else if (currentAudioMode === 'youtube' && !isYtPlaying) { isYtPlaying = true; document.getElementById('ytIframe').src = getYtSrc(currentYtIndex, true); } }
+            pomoTimerId = setInterval(() => { pomoTimeLeft--; updatePomoDisplay(); if (pomoTimeLeft <= 0) stopPomo("Completed"); }, 1000);
+        }
+    }
+    function stopPomo(defaultReason) {
+        clearInterval(pomoTimerId); isPomoRunning = false; 
+        document.getElementById('pomoMins').disabled = false; document.getElementById('focusTaskLabel').disabled = false; document.getElementById('focusTaskDetails').disabled = false; document.getElementById('pomoResetBtn').disabled = false;
+        document.getElementById('pomoBtn').innerText = "Start"; document.getElementById('pomoBtn').style.backgroundColor = "var(--color-primary)";
+        if (autoPlayAudio) { if (currentAudioMode === 'ambient' && isNoisePlaying) toggleNoise(); else if (currentAudioMode === 'youtube' && isYtPlaying) { isYtPlaying = false; document.getElementById('ytIframe').src = getYtSrc(currentYtIndex, false); } }
+        let secondsLogged = pomoTotalTime - (pomoTimeLeft > 0 ? pomoTimeLeft : 0); let minsLogged = Math.floor(secondsLogged / 60);
+        let taskLabel = document.getElementById('focusTaskLabel').value || "Untitled Task"; let taskDetails = document.getElementById('focusTaskDetails').value;
+        let displayTask = taskDetails ? `${taskLabel} - ${taskDetails}` : taskLabel;
+        document.getElementById('pomoStats').innerText = `Time Logged: ${minsLogged}m / ${Math.floor(pomoTotalTime/60)}m`; document.getElementById('pomoModalTask').value = displayTask;
+        document.getElementById('pomoOutcome').value = "Success"; document.getElementById('failReasonContainer').style.display = "none"; document.getElementById('pomoNotes').value = '';
+        document.getElementById('pomoModal').showModal(); pomoTimeLeft = pomoTotalTime; updatePomoDisplay();
+    }
+    function savePomoLog() {
+        const task = document.getElementById('pomoModalTask').value; const outcome = document.getElementById('pomoOutcome').value; const failReason = document.getElementById('pomoFailReason').value;
+        let secondsLogged = pomoTotalTime - (pomoTimeLeft > 0 ? pomoTimeLeft : 0); 
+        pomoLogs.push({ date: new Date().toLocaleDateString(), task: task, outcome: outcome, reason: outcome === 'Fail' ? failReason : 'Success', minutes: Math.floor(secondsLogged / 60) }); 
+        saveData('bs_pomoLogs', pomoLogs); document.getElementById('pomoModal').close(); renderSidebar(); 
+    }
+    function resetPomo() {
+        clearInterval(pomoTimerId); isPomoRunning = false; const minInput = document.getElementById('pomoMins'); minInput.disabled = false;
+        let val = parseInt(minInput.value); if (isNaN(val) || val < 1) { val = 25; minInput.value = 25; } pomoTimeLeft = val * 60;
+        document.getElementById('pomoBtn').innerText = "Start"; document.getElementById('pomoBtn').style.backgroundColor = "var(--color-primary)"; updatePomoDisplay();
+    }
+    function updatePomoDisplay() { const d = document.getElementById('pomoDisplay'); if(!d) return; if (isNaN(pomoTimeLeft) || pomoTimeLeft < 0) pomoTimeLeft = 0; const m = Math.floor(pomoTimeLeft / 60).toString().padStart(2, '0'); const s = (pomoTimeLeft % 60).toString().padStart(2, '0'); d.innerText = `${m}:${s}`; }
+
+    // --- OTHER REPEATED UTILITIES ---
+    function toggleCost() {
+        const btn = document.getElementById('costBtn');
+        if(isCostRunning) { clearInterval(costTimerId); btn.innerText = "Resume"; btn.style.backgroundColor = "var(--color-success)"; } 
+        else { document.getElementById('costRate').disabled = true; document.getElementById('costAttendees').disabled = true; btn.innerText = "Pause"; btn.style.backgroundColor = "var(--color-danger)"; costTimerId = setInterval(() => { costSeconds++; updateCostDisplay(); }, 1000); }
+        isCostRunning = !isCostRunning;
+    }
+    function resetCost() { clearInterval(costTimerId); isCostRunning = false; costSeconds = 0; document.getElementById('costRate').disabled = false; document.getElementById('costAttendees').disabled = false; const btn = document.getElementById('costBtn'); btn.innerText = "Start"; btn.style.backgroundColor = "var(--color-success)"; updateCostDisplay(); }
+    function updateCostDisplay() { const d = document.getElementById('costDisplay'); let rate = parseFloat(document.getElementById('costRate').value) || 100; let att = parseInt(document.getElementById('costAttendees').value) || 4; d.innerText = "$" + ((rate * att) * (costSeconds / 3600)).toFixed(2); }
+
+    function toggleNoise() {
+        const btn = document.getElementById('noiseBtn');
+        if (isNoisePlaying) { if(noiseSrc) noiseSrc.stop(); if(audioCtx) audioCtx.suspend(); isNoisePlaying = false; btn.innerText = "Play"; btn.style.backgroundColor = "var(--color-primary)"; } 
+        else {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume();
+            let bufferSize = audioCtx.sampleRate * 2; let buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate); let output = buffer.getChannelData(0); let type = document.getElementById('noiseType').value;
+            if(type === 'white') { for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1; } 
+            else if (type === 'brown') { let lastOut = 0; for (let i = 0; i < bufferSize; i++) { let white = Math.random() * 2 - 1; output[i] = (lastOut + (0.02 * white)) / 1.02; lastOut = output[i]; output[i] *= 3.5; } } 
+            else { let b0=0, b1=0, b2=0, b3=0, b4=0, b5=0, b6=0; for (let i = 0; i < bufferSize; i++) { let white = Math.random() * 2 - 1; b0 = 0.99886 * b0 + white * 0.0555179; b1 = 0.99332 * b1 + white * 0.0750759; b2 = 0.96900 * b2 + white * 0.1538520; b3 = 0.86650 * b3 + white * 0.3104856; b4 = 0.55000 * b4 + white * 0.5329522; b5 = -0.7616 * b5 - white * 0.0168980; output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362; output[i] *= 0.11; b6 = white * 0.115926; } }
+            noiseSrc = audioCtx.createBufferSource(); noiseSrc.buffer = buffer; noiseSrc.loop = true;
+            if(!noiseGain) { noiseGain = audioCtx.createGain(); noiseGain.connect(audioCtx.destination); }
+            noiseGain.gain.value = document.getElementById('noiseVol') ? document.getElementById('noiseVol').value : 0.1; 
+            noiseSrc.connect(noiseGain); noiseSrc.start(0); isNoisePlaying = true; btn.innerText = "Stop"; btn.style.backgroundColor = "var(--color-danger)";
+        }
+    }
+    function updateVolume(val) { if(noiseGain) noiseGain.gain.value = parseFloat(val); }
+
+    function saveNote() { const textObj = document.getElementById('quickNoteText'); const text = textObj.value.trim(); if (text) { const id = Date.now().toString(); const dateStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); const title = text.split('\n')[0].substring(0, 25) + (text.length > 25 ? '...' : ''); notes.unshift({ id, title, text, date: dateStr }); saveData('bs_notes', notes); textObj.value = ''; renderNotes(); } }
+    function renderNotes() { const container = document.getElementById('notesDisplay'); if(!container) return; container.innerHTML = ''; notes.forEach(note => { const li = document.createElement('li'); li.className = 'note-item'; const displayTitle = note.title || (note.text.split('\n')[0].substring(0, 25) + '...'); li.innerHTML = `<span class="note-title">${sanitize(displayTitle)}</span><span class="note-time" style="color:var(--color-text-muted); font-size:0.8em;">${sanitize(note.date)}</span>`; li.onclick = () => openNote(note.id); container.appendChild(li); }); }
+    function openNote(id) { const note = notes.find(n => n.id === id); if (note) { document.getElementById('modalDate').innerText = `Created: ${note.date}`; document.getElementById('modalNoteTitle').value = note.title || ''; document.getElementById('modalTextEdit').value = note.text; document.getElementById('saveNoteEditBtn').onclick = () => { note.title = document.getElementById('modalNoteTitle').value.trim() || 'Untitled Note'; note.text = document.getElementById('modalTextEdit').value.trim(); saveData('bs_notes', notes); renderNotes(); document.getElementById('noteModal').close(); }; document.getElementById('deleteNoteBtn').onclick = () => { notes = notes.filter(n => n.id !== id); saveData('bs_notes', notes); renderNotes(); document.getElementById('noteModal').close(); }; document.getElementById('noteModal').showModal(); } }
+
+    function addClock() { const tz = document.getElementById('timezoneSelect').value; clocks.push({ label: tz.split('/').pop().replace('_', ' '), tz }); saveData('bs_clocks', clocks); renderClocks(); }
+    function removeClock(index) { clocks.splice(index, 1); saveData('bs_clocks', clocks); renderClocks(); }
+    function updateClockLabel(index, newLabel) { if (newLabel.trim() !== '') clocks[index].label = newLabel.trim(); saveData('bs_clocks', clocks); renderClocks(); }
+    function renderClocks() {
+        const container = document.getElementById('clocksDisplay'); if(!container) return; container.innerHTML = '';
+        clocks.forEach((c, index) => {
+            if (!c || !c.label) return;
+            const div = document.createElement('div'); div.className = 'clock-item'; 
+            div.innerHTML = `<span class="clock-label" contenteditable="true" spellcheck="false" onblur="updateClockLabel(${index}, this.innerText)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}">${sanitize(c.label)}</span><span class="clock-time" id="clock-time-${index}">--:--:--</span>${index !== 0 ? `<button class="danger hover-actions" style="position:absolute; top:4px; right:4px; padding:2px 6px; font-size:0.7em; background:transparent; color:var(--color-danger); border:none;" onclick="removeClock(${index})">X</button>` : ''}`;
+            container.appendChild(div);
+        }); updateTime();
+    }
+    function updateTime() { const now = new Date(); clocks.forEach((c, index) => { const el = document.getElementById(`clock-time-${index}`); if (el && c) { try { el.innerText = new Intl.DateTimeFormat('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true, timeZoneName: 'short', timeZone: c.tz !== 'Local' ? c.tz : undefined }).format(now); } catch (err) { el.innerText = "Invalid TZ"; } } }); }
+
+    // --- BUCKETS ENGINE & MODALS ---
+    function promptAddCategory() { openBucketModal(); }
+    function openBucketModal(existingName = null) {
+        const modal = document.getElementById('bucketModal');
+        const nameInput = document.getElementById('bucketModalName');
+        const iconInput = document.getElementById('bucketModalIcon');
+        const oldNameInput = document.getElementById('bucketModalOldName');
+        
+        if (existingName) {
+            document.getElementById('bucketModalTitle').innerText = "Edit Bucket";
+            nameInput.value = existingName; oldNameInput.value = existingName;
+            iconInput.value = bucketIcons['cat-' + existingName] || '';
+        } else {
+            document.getElementById('bucketModalTitle').innerText = "Add Bucket";
+            nameInput.value = ''; oldNameInput.value = ''; iconInput.value = '';
+        }
+        modal.showModal();
+    }
+
+    function saveBucketFromModal() {
+        const oldName = document.getElementById('bucketModalOldName').value;
+        const newName = document.getElementById('bucketModalName').value.trim();
+        const newIcon = document.getElementById('bucketModalIcon').value.trim();
+
+        if (!newName) { alert("Bucket name is required."); return; }
+
+        if (oldName) {
+            if (newName !== oldName && categories.map(c => c.toLowerCase()).includes(newName.toLowerCase())) { alert("Bucket exists."); return; }
+            if (newName !== oldName) {
+                categories[categories.indexOf(oldName)] = newName;
+                links.forEach(link => { if (link && link.category === oldName) link.category = newName; });
+                if (bucketSizes['cat-' + oldName]) { bucketSizes['cat-' + newName] = bucketSizes['cat-' + oldName]; delete bucketSizes['cat-' + oldName]; }
+                if (bucketIcons['cat-' + oldName]) { delete bucketIcons['cat-' + oldName]; }
+            }
+            bucketIcons['cat-' + newName] = newIcon;
+        } else {
+            if (categories.map(c => c.toLowerCase()).includes(newName.toLowerCase())) { alert("Bucket exists."); return; }
+            categories.push(newName);
+            let id = 'cat-' + newName;
+            bucketSizes[id] = { x: 40, y: 40 };
+            bucketIcons[id] = newIcon;
+        }
+
+        saveData('bs_categories', categories); saveData('bs_links', links);
+        saveData('bs_bucketSizes', bucketSizes); saveData('bs_bucketIcons', bucketIcons);
+        
+        document.getElementById('bucketModal').close(); renderBuckets();
+    }
+
+    function deleteCategory(catName) { if(confirm(`Delete the "${catName}" list and all its URLs?`)) { categories = categories.filter(c => c !== catName); links = links.filter(l => l && l.category !== catName); saveData('bs_categories', categories); saveData('bs_links', links); renderBuckets(); debugLog(`Deleted bucket: ${catName}`); } }
+    
+    function promptGlobalAddLink() {
+        if(categories.length === 0) { alert("Please add a bucket first."); return; }
+        openLinkModal(categories[0]); 
+    }
+
+    function openLinkModal(categoryId = null, linkId = null) {
+        const catSelect = document.getElementById('linkModalCategory');
+        catSelect.innerHTML = categories.map(c => `<option value="${sanitize(c)}">${sanitize(c)}</option>`).join('');
+        
+        if (linkId) {
+            const link = links.find(l => l && l.id === linkId);
+            if (!link) return;
+            document.getElementById('linkModalTitle').innerText = "Edit URL";
+            document.getElementById('linkModalId').value = link.id;
+            document.getElementById('linkModalCategory').value = link.category;
+            document.getElementById('linkModalUrl').value = link.url || "";
+            document.getElementById('linkModalName').value = link.name || "";
+            document.getElementById('linkModalDesc').value = link.description || "";
+            document.getElementById('linkModalIcon').value = link.customIcon || "";
+        } else {
+            document.getElementById('linkModalTitle').innerText = "Add URL";
+            document.getElementById('linkModalId').value = "";
+            if (categoryId) document.getElementById('linkModalCategory').value = categoryId;
+            document.getElementById('linkModalUrl').value = "";
+            document.getElementById('linkModalName').value = "";
+            document.getElementById('linkModalDesc').value = "";
+            document.getElementById('linkModalIcon').value = "";
+        }
+        document.getElementById('linkModal').showModal();
+    }
+
+    function saveLinkFromModal() {
+        const id = document.getElementById('linkModalId').value;
+        const category = document.getElementById('linkModalCategory').value;
+        const url = document.getElementById('linkModalUrl').value.trim();
+        const name = document.getElementById('linkModalName').value.trim();
+        const desc = document.getElementById('linkModalDesc').value.trim();
+        const customIcon = document.getElementById('linkModalIcon').value.trim();
+
+        if (!url || !name) { alert("URL and Title are required."); return; }
+
+        if (id) {
+            const link = links.find(l => l && l.id === id);
+            if (link) { link.category = category; link.url = url; link.name = name; link.description = desc; link.customIcon = customIcon; }
+        } else {
+            links.push({ id: Date.now().toString(36), name: name, url: url, description: desc, category: category, customIcon: customIcon });
+        }
+        
+        // Auto-size height when a new link is added to show it instantly
+        let bucketId = 'cat-' + category;
+        if(bucketSizes[bucketId] && bucketSizes[bucketId].h) { 
+            delete bucketSizes[bucketId].h; 
+            saveData('bs_bucketSizes', bucketSizes); 
+        }
+
+        saveData('bs_links', links); renderBuckets(); document.getElementById('linkModal').close();
+    }
+
+    function deleteLink(id) { links = links.filter(l => l && l.id !== id); saveData('bs_links', links); renderBuckets(); }
+
+    const resizeObserver = new ResizeObserver(entries => { let changed = false; for (let entry of entries) { const el = entry.target; const itemId = el.dataset.id; if (itemId) { if(!bucketSizes[itemId]) bucketSizes[itemId] = {}; bucketSizes[itemId].w = el.offsetWidth; bucketSizes[itemId].h = el.offsetHeight; changed = true; } } if (changed) saveData('bs_bucketSizes', bucketSizes); });
+
+    function makeDraggable(element, itemId) {
+        const handle = element.querySelector('.drag-handle'); 
+        let isDragging = false;
+        let startX, startY, initialLeft, initialTop;
+        
+        const startDrag = function(e) {
+            const isTouch = e.type === 'touchstart';
+            if (isTouch && e.cancelable) e.preventDefault(); 
+
+            isDragging = true;
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            initialLeft = element.offsetLeft; initialTop = element.offsetTop;
+            startX = clientX; startY = clientY;
+
+            element.classList.add('dragging'); 
+            document.getElementById('bucketBoard').classList.add('show-grid');
+            debugLog(`Drag start: ${itemId}`);
+            
+            const onMove = (moveEvent) => { 
+                if (!isDragging) return;
+                if (moveEvent.type === 'touchmove' && moveEvent.cancelable) moveEvent.preventDefault();
+                const mClientX = moveEvent.type === 'touchmove' ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const mClientY = moveEvent.type === 'touchmove' ? moveEvent.touches[0].clientY : moveEvent.clientY;
+                
+                const dx = mClientX - startX; const dy = mClientY - startY;
+                element.style.left = `${initialLeft + dx}px`; element.style.top = `${initialTop + dy}px`;
+            };
+            
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+
+                document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove); document.removeEventListener('touchend', onEnd);
+                
+                element.classList.remove('dragging'); 
+                document.getElementById('bucketBoard').classList.remove('show-grid');
+                
+                let currentX = parseInt(element.style.left, 10) || 0; let currentY = parseInt(element.style.top, 10) || 0; 
+                let snappedX = Math.round(currentX / 20) * 20; let snappedY = Math.round(currentY / 20) * 20;
+                
+                if (snappedX < 0) snappedX = 0; if (snappedY < 0) snappedY = 0;
+                element.style.left = snappedX + 'px'; element.style.top = snappedY + 'px';
+                
+                if(!bucketSizes[itemId]) bucketSizes[itemId] = {}; 
+                bucketSizes[itemId].x = snappedX; bucketSizes[itemId].y = snappedY; 
+                saveData('bs_bucketSizes', bucketSizes);
+                debugLog(`Drag end: ${itemId} snapped to ${snappedX}, ${snappedY}`);
+            };
+            
+            document.addEventListener('mousemove', onMove); document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false }); document.addEventListener('touchend', onEnd);
+        };
+
+        handle.addEventListener('mousedown', startDrag); handle.addEventListener('touchstart', startDrag, { passive: false });
+    }
+
+    function renderBuckets() {
+        const board = document.getElementById('bucketBoard'); board.innerHTML = ''; 
+        categories.forEach((cat) => {
+            if(!cat) return;
+            const itemId = 'cat-' + cat; const div = document.createElement('div'); div.className = 'category'; div.dataset.id = itemId;
+            
+            let posX = bucketSizes[itemId] ? parseInt(bucketSizes[itemId].x) : 0; let posY = bucketSizes[itemId] ? parseInt(bucketSizes[itemId].y) : 0;
+            div.style.left = (isNaN(posX) ? 0 : posX) + 'px'; div.style.top = (isNaN(posY) ? 0 : posY) + 'px'; 
+            
+            if(bucketSizes[itemId]) { 
+                let w = parseInt(bucketSizes[itemId].w); let h = parseInt(bucketSizes[itemId].h);
+                if(w > 100) div.style.width = w + 'px'; if(h > 50) div.style.height = h + 'px'; 
+            }
+
+            const bIcon = bucketIcons[itemId] ? `<span style="margin-right:6px; font-size:1.1em;">${sanitize(bucketIcons[itemId])}</span>` : '';
+
+            div.innerHTML = `
+                <div class="category-header">
+                    <h2><span class="drag-handle" title="Drag to move">⠿</span> ${bIcon}${sanitize(cat)}</h2>
+                    <div class="hover-actions" style="position:static; opacity:1; background:transparent;">
+                        <button class="secondary" onclick="openBucketModal('${cat}')" title="Edit Bucket" style="padding:4px 8px;">✏️</button>
+                        <button class="danger" onclick="deleteCategory('${cat}')" title="Delete Bucket" style="padding:4px 8px;">X</button>
+                    </div>
+                </div>
+                <ul class="link-list">
+                    ${links.filter(l => l && l.category === cat).map(link => `
+                        <li class="link-item">
+                            <div class="link-header">
+                                <span class="link-icon">${renderLinkIcon(link)}</span>
+                                <a href="${link.url}" target="_blank" class="link-title">${sanitize(link.name)}</a>
+                            </div>
+                            ${link.description ? `<div class="link-desc">${sanitize(link.description)}</div>` : ''}
+                            <div class="hover-actions">
+                                <button class="secondary" onclick="openLinkModal(null, '${link.id}')" title="Edit URL">✏️</button>
+                                <button class="danger" onclick="deleteLink('${link.id}')" title="Remove URL">X</button>
+                            </div>
+                        </li>
+                    `).join('')}
+                </ul>
+                <button class="bucket-add-btn" onclick="openLinkModal('${sanitize(cat)}')">+ Add URL</button>
+            `;
+            board.appendChild(div); makeDraggable(div, itemId); resizeObserver.observe(div);
+        });
+    }
+
+</script>
+</body>
+</html>
