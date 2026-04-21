@@ -6,6 +6,7 @@
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
         script-src 'self' 'unsafe-inline';
+        worker-src 'self';
         style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
         font-src https://fonts.gstatic.com;
         img-src 'self' https://www.google.com data:;
@@ -619,7 +620,7 @@
         </div>
         <div class="auth-field">
             <label class="auth-label" for="registerPassword">Master password</label>
-            <input type="password" id="registerPassword" class="auth-input" placeholder="Min 10 characters" autocomplete="new-password">
+            <input type="password" id="registerPassword" class="auth-input" placeholder="Min 12 characters" autocomplete="new-password">
             <div class="pw-strength"><div id="pwStrengthFill" class="pw-strength-fill"></div></div>
         </div>
         <div class="auth-field">
@@ -673,7 +674,7 @@
         </div>
         <div class="auth-field">
             <label class="auth-label" for="recoveryNewPassword">New master password</label>
-            <input type="password" id="recoveryNewPassword" class="auth-input" placeholder="Min 10 characters" autocomplete="new-password">
+            <input type="password" id="recoveryNewPassword" class="auth-input" placeholder="Min 12 characters" autocomplete="new-password">
         </div>
         <div class="auth-field">
             <label class="auth-label" for="recoveryNewPasswordConfirm">Confirm new password</label>
@@ -1025,6 +1026,8 @@
                 <button class="secondary" id="btnAddStrategicTag" style="padding:6px 10px;">+ Add</button>
             </div>
         </div>
+        <div style="border-top: 1px solid var(--color-border); margin: 12px 0;"></div>
+        <div id="securityPanelMount"></div>
     </div>
 </dialog>
 
@@ -1054,11 +1057,43 @@
 </dialog>
 
 <!-- ========== SCRIPTS ========== -->
+<script src="lib/crypto-client.js"></script>
 <script src="crypto.js"></script>
+<script src="lib/storage-persistence.js"></script>
+<script src="lib/session-lock-modal.js"></script>
+<script src="lib/toast-notifications.js"></script>
+<script src="lib/recovery-key-display.js"></script>
+<script src="lib/security-settings-panel.js"></script>
+<script src="lib/subtask-reversion.js"></script>
 <script src="auth.js"></script>
 <script>
 (function() {
     'use strict';
+
+    // ============================================================
+    // v1.3.0: EVENT BUS — minimal pub/sub for cross-module coordination
+    // ============================================================
+
+    window.EventBus = (() => {
+        const listeners = {};
+        return {
+            on(event, handler) {
+                (listeners[event] = listeners[event] || []).push(handler);
+                return () => {
+                    const arr = listeners[event];
+                    if (arr) listeners[event] = arr.filter(h => h !== handler);
+                };
+            },
+            off(event, handler) {
+                if (listeners[event]) listeners[event] = listeners[event].filter(h => h !== handler);
+            },
+            emit(event, payload) {
+                (listeners[event] || []).forEach(h => {
+                    try { h(payload); } catch (e) { console.error(`[EventBus] Error in ${event} handler:`, e); }
+                });
+            },
+        };
+    })();
 
     // ============================================================
     // SECURITY UTILITIES
@@ -1168,7 +1203,7 @@
 
         if (!email) { showError('registerError', 'Email is required.'); return; }
         if (pw !== pwConfirm) { showError('registerError', 'Passwords do not match.'); return; }
-        if (pw.length < 10) { showError('registerError', 'Password must be at least 10 characters.'); return; }
+        if (pw.length < 12) { showError('registerError', 'Password must be at least 12 characters.'); return; }
         if (!betaCode) { showError('registerError', 'A valid beta access code is required.'); return; }
 
         $('registerBtn').disabled = true;
@@ -1187,10 +1222,17 @@
         }
     });
 
-    // Copy recovery key
+    // Copy recovery key — v1.3.0: also marks the kit as acknowledged
     $('copyRecoveryKey').addEventListener('click', () => {
         navigator.clipboard.writeText($('recoveryKeyDisplay').textContent)
-            .then(() => { $('copyRecoveryKey').textContent = 'Copied!'; setTimeout(() => { $('copyRecoveryKey').textContent = 'Copy to Clipboard'; }, 2000); })
+            .then(() => {
+                $('copyRecoveryKey').textContent = 'Copied!';
+                setTimeout(() => { $('copyRecoveryKey').textContent = 'Copy to Clipboard'; }, 2000);
+                // v1.3.0: Mark the kit as acknowledged so the upgrade toast doesn't fire
+                if (typeof AuthManager.markRecoveryKitAcknowledged === 'function') {
+                    AuthManager.markRecoveryKitAcknowledged().catch(() => {});
+                }
+            })
             .catch(() => { /* fallback: user can manually select */ });
     });
 
@@ -1236,7 +1278,7 @@
 
         if (!email || !key || !pw) { showError('recoveryError', 'All fields are required.'); return; }
         if (pw !== pwConfirm) { showError('recoveryError', 'Passwords do not match.'); return; }
-        if (pw.length < 10) { showError('recoveryError', 'Password must be at least 10 characters.'); return; }
+        if (pw.length < 12) { showError('recoveryError', 'Password must be at least 12 characters.'); return; }
 
         $('recoveryBtn').disabled = true;
         showProgress('recoveryProgress');
@@ -1254,9 +1296,17 @@
         }
     });
 
+    // Copy new recovery key (post-recovery flow) — v1.3.0: also marks acknowledged
     $('copyNewRecoveryKey').addEventListener('click', () => {
         navigator.clipboard.writeText($('newRecoveryKeyDisplay').textContent)
-            .then(() => { $('copyNewRecoveryKey').textContent = 'Copied!'; setTimeout(() => { $('copyNewRecoveryKey').textContent = 'Copy to Clipboard'; }, 2000); })
+            .then(() => {
+                $('copyNewRecoveryKey').textContent = 'Copied!';
+                setTimeout(() => { $('copyNewRecoveryKey').textContent = 'Copy to Clipboard'; }, 2000);
+                // v1.3.0: Mark the kit as acknowledged
+                if (typeof AuthManager.markRecoveryKitAcknowledged === 'function') {
+                    AuthManager.markRecoveryKitAcknowledged().catch(() => {});
+                }
+            })
             .catch(() => {});
     });
 
@@ -1317,6 +1367,11 @@
             // Schema migration hook
             if (!appState.schemaVersion) appState.schemaVersion = 1;
 
+            // v1.3.0: Check if recovery kit needs upgrading — fires the nag toast
+            if (typeof AuthManager.checkRecoveryKitVersion === 'function') {
+                AuthManager.checkRecoveryKitVersion(appState);
+            }
+
             $('authScreen').classList.add('hidden');
             $('appScreen').classList.remove('hidden');
             const session = AuthManager.getSession();
@@ -1328,8 +1383,8 @@
         }
     }
 
-    function exitApp() {
-        AuthManager.logout();
+    async function exitApp() {
+        await AuthManager.logout();
         appState = null;
         $('appScreen').classList.add('hidden');
         $('authScreen').classList.remove('hidden');
@@ -3064,6 +3119,13 @@
 
     $('btnSettings').addEventListener('click', () => {
         renderTaxonomyTags();
+        // v1.3.0: Mount the Security panel into the settings modal
+        if (window.SecuritySettingsPanel) {
+            const mountPoint = $('securityPanelMount');
+            if (mountPoint) {
+                window.SecuritySettingsPanel.mount(mountPoint);
+            }
+        }
         $('settingsModal').showModal();
     });
     $('settingsModalClose').addEventListener('click', () => $('settingsModal').close());
@@ -3730,6 +3792,17 @@
                 if (changed) persistState();
             }, 300);
         });
+
+        // v1.3.0: Wire toast notification system to EventBus
+        if (window.ToastManager && typeof window.ToastManager.installEventBusListeners === 'function') {
+            window.ToastManager.installEventBusListeners(window.EventBus);
+        }
+
+        // v1.3.0 / Epic 104: Install storage persistence hardening (idle stubs — wired to real outbox in v1.4.0)
+        if (window.StoragePersistence) {
+            window.StoragePersistence.installOnlineSyncDrain(async () => { /* v1.4.0: outbox.drainAll() */ }, window.EventBus);
+            window.StoragePersistence.installUnsavedChangesGuard(() => 0); // v1.4.0: returns real outbox size
+        }
 
         debugLog('Boot complete');
     }

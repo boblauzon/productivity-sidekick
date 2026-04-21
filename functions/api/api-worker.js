@@ -236,6 +236,53 @@ async function handleUpdateAuth(request, env) {
     return jsonResponse({ ok: true, token, userId: user.id });
 }
 
+async function handleUpdateRecoveryKit(request, env) {
+    const token = getAuthToken(request);
+    const userId = await verifySessionToken(token, env.SESSION_SECRET);
+    if (!userId) return errorResponse('Unauthorized', 401);
+
+    const body = await request.json().catch(() => null);
+    if (!body || !body.recoveryBlob || typeof body.recoveryBlob !== 'object') {
+        return errorResponse('recoveryBlob required');
+    }
+
+    const { ciphertext, iv } = body.recoveryBlob;
+    if (typeof ciphertext !== 'string' || !ciphertext
+        || typeof iv !== 'string' || !iv) {
+        return errorResponse('recoveryBlob fields required');
+    }
+
+    const MAX_FIELD_SIZE = 1024;
+    const MAX_BLOB_SIZE = 2048;
+    if (ciphertext.length > MAX_FIELD_SIZE || iv.length > MAX_FIELD_SIZE) {
+        return errorResponse('recoveryBlob too large');
+    }
+    const recoveryBlobJson = JSON.stringify(body.recoveryBlob);
+    if (recoveryBlobJson.length > MAX_BLOB_SIZE) {
+        return errorResponse('recoveryBlob too large');
+    }
+
+    try {
+        const result = await env.DB.prepare(
+            `UPDATE users
+             SET recovery_blob = ?,
+                 recovery_kit_version = 2,
+                 recovery_kit_updated_at = ?,
+                 updated_at = datetime('now')
+             WHERE id = ?`
+        ).bind(recoveryBlobJson, Date.now(), userId).run();
+
+        if (result.changes === 0) {
+            return errorResponse('Account not found', 404);
+        }
+
+        return jsonResponse({ ok: true });
+    } catch (err) {
+        console.error('[recovery-kit] D1 update failed:', err);
+        return errorResponse('Internal error', 500);
+    }
+}
+
 async function handleDeleteAccount(request, env) {
     const token = getAuthToken(request);
     const userId = await verifySessionToken(token, env.SESSION_SECRET);
@@ -442,6 +489,7 @@ export async function onRequest(context) {
         if (path === '/api/auth/login' && method === 'POST') return await handleLogin(request, env);
         if (path === '/api/auth/recover' && method === 'POST') return await handleRecover(request, env);
         if (path === '/api/auth/update' && method === 'POST') return await handleUpdateAuth(request, env);
+        if (path === '/api/auth/recovery-kit' && method === 'POST') return await handleUpdateRecoveryKit(request, env);
         if (path === '/api/auth/delete' && method === 'POST') return await handleDeleteAccount(request, env);
 
         // Vault routes
