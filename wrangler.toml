@@ -30,3 +30,14 @@ pages_build_output_dir = "public"
 binding = "DB"
 database_name = "sidekick-db"
 database_id = "ac8607f9-9f58-4800-9a19-a0efd44d946e"
+# ============================================================
+# Preview environment fallback variables
+# ============================================================
+# These are NON-SENSITIVE defaults that prevent the Web Crypto API
+# from crashing on empty secrets during preview/staging deploys.
+# The REAL secrets must be set in the Cloudflare Dashboard under
+# Settings > Variables & Secrets > Preview, which override these.
+# ============================================================
+
+[env.preview.vars]
+SESSION_SECRET = "PREVIEW-PLACEHOLDER-REPLACE-IN-DASHBOARD"
