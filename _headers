@@ -1,0 +1,17 @@
+# Productivity Sidekick — Cloudflare Pages headers
+# v1.3.0: Added worker-src 'self' for the crypto worker enclave.
+
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://us-assets.i.posthog.com https://us.i.posthog.com; worker-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https://www.google.com data:; frame-src https://www.youtube.com; connect-src 'self' https://us.i.posthog.com https://app.posthog.com; base-uri 'none'; form-action 'self'; frame-ancestors 'none';
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+  Cross-Origin-Opener-Policy: same-origin
+  Cross-Origin-Resource-Policy: same-origin
+
+/workers/*
+  Content-Type: application/javascript; charset=utf-8
+  Cache-Control: public, max-age=300, must-revalidate
+  X-Content-Type-Options: nosniff
