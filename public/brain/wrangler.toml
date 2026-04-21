@@ -1,0 +1,45 @@
+# ============================================================
+# Productivity Sidekick — "The Brain" Worker Configuration
+# Epic 31-32: Two-Site, One-Brain Architecture
+# ============================================================
+#
+# This is a STANDALONE Cloudflare Worker sharing the existing
+# D1 database (sidekick-db) with the Pages Functions app.
+#
+# PHASE 1 (Now):
+#   1. Add new tables to the existing DB:
+#      wrangler d1 execute sidekick-db --remote --file=brain/schema-addons.sql
+#
+#   2. Set secrets:
+#      wrangler secret put SESSION_SECRET -c brain/wrangler.toml
+#      wrangler secret put BETA_CODE -c brain/wrangler.toml
+#      wrangler secret put ADMIN_API_KEY -c brain/wrangler.toml
+#
+#   3. Deploy The Brain:
+#      wrangler deploy -c brain/wrangler.toml
+#
+# PHASE 2 (When Admin Portal is ready):
+#   1. Point Site A's API_BASE at The Brain's URL
+#   2. Click "Migrate Schema" in Admin Portal
+#      (calls POST /api/admin/migrate → renames columns → flips to v2)
+#   3. Delete the old functions/api/[[path]].js
+#
+# LOCAL DEV:
+#   wrangler dev -c brain/wrangler.toml --remote
+
+name = "sidekick-brain"
+main = "worker.js"
+compatibility_date = "2025-01-01"
+
+# Custom domain (optional — configure in Cloudflare DNS):
+# routes = [{ pattern = "api.sidekick.dev/*", zone_name = "sidekick.dev" }]
+
+[vars]
+# Comma-separated origins allowed to call this API.
+# Add your admin dashboard URL here when built.
+ALLOWED_ORIGINS = "https://productivity-sidekick.pages.dev,http://localhost:3000,http://localhost:5173"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sidekick-db"
+database_id = "ac8607f9-9f58-4800-9a19-a0efd44d946e"

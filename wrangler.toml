@@ -1,0 +1,32 @@
+# Productivity Sidekick — Cloudflare Pages Configuration
+#
+# Deployment steps:
+#   1. Create D1 database:
+#      wrangler d1 create sidekick-db
+#      (Copy the database_id into the [[d1_databases]] section below)
+#
+#   2. Run schema migration:
+#      wrangler d1 execute sidekick-db --file=schema.sql
+#
+#   3. Set secrets:
+#      wrangler secret put SESSION_SECRET
+#        → Generate a strong random string (e.g., openssl rand -hex 32)
+#      wrangler secret put BETA_CODE
+#        → Your beta invite code (e.g., SIDEKICK-BETA)
+#      wrangler secret put FEEDBACK_WEBHOOK  (optional)
+#        → Discord/Slack webhook URL for feedback notifications
+#
+#   4. Deploy:
+#      wrangler pages deploy public
+#
+# Local development:
+#   wrangler pages dev public --d1 DB=sidekick-db
+
+name = "productivity-sidekick"
+compatibility_date = "2025-01-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "sidekick-db"
+database_id = "YOUR_DATABASE_ID_HERE"

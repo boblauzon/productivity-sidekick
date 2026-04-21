@@ -1,0 +1,3740 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="
+        default-src 'self';
+        script-src 'self' 'unsafe-inline';
+        style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+        font-src https://fonts.gstatic.com;
+        img-src 'self' https://www.google.com data:;
+        frame-src https://www.youtube.com;
+        connect-src 'self';
+    ">
+    <title>Productivity Sidekick</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        /* === DESIGN SYSTEM === */
+        :root {
+            --bg-home: #f8fafc;
+            --bg-template: #ffffff;
+            --color-dark: #334155;
+            --color-text: #0f172a;
+            --color-text-muted: #64748b;
+            --color-primary: #6366f1;
+            --color-primary-hover: #4f46e5;
+            --color-border: #e2e8f0;
+            --color-danger: #ef4444;
+            --color-success: #10b981;
+            --color-warning: #f59e0b;
+            --shadow-sm: 0 1px 2px 0 rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05);
+            --radius-md: 6px;
+            --radius-lg: 10px;
+            --font-body: 'DM Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        body { font-family: var(--font-body); background-color: var(--bg-home); margin: 0; padding: 0; color: var(--color-text); font-size: 14px; line-height: 1.5; overflow-x: hidden; }
+
+        /* === AUTH SCREENS === */
+        .auth-wrapper {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 24px;
+            background:
+                radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(99,102,241,0.05) 0%, transparent 50%),
+                var(--bg-home);
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 420px;
+            background: var(--bg-template);
+            border-radius: 16px;
+            border: 1px solid var(--color-border);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
+            padding: 40px 36px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .auth-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--color-primary), #818cf8);
+        }
+
+        .auth-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 32px;
+        }
+        .auth-brand-icon {
+            background: var(--color-primary);
+            color: white;
+            width: 36px; height: 36px;
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 14px;
+            letter-spacing: -0.5px;
+        }
+        .auth-brand-name {
+            font-size: 18px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--color-text);
+        }
+
+        .auth-heading {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            margin: 0 0 6px 0;
+            color: var(--color-text);
+        }
+        .auth-subtext {
+            font-size: 13.5px;
+            color: var(--color-text-muted);
+            margin: 0 0 28px 0;
+            line-height: 1.5;
+        }
+
+        .auth-field { margin-bottom: 18px; }
+        .auth-label {
+            display: block;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            margin-bottom: 6px;
+        }
+        .auth-input {
+            width: 100%;
+            padding: 11px 14px;
+            border: 1px solid var(--color-border);
+            border-radius: var(--radius-md);
+            font-family: var(--font-body);
+            font-size: 14px;
+            color: var(--color-text);
+            background: var(--bg-template);
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .auth-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        .auth-input.mono {
+            font-family: var(--font-mono);
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: var(--radius-md);
+            background: var(--color-primary);
+            color: white;
+            font-family: var(--font-body);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+        .auth-btn:hover:not(:disabled) {
+            background: var(--color-primary-hover);
+            box-shadow: var(--shadow-md);
+            transform: translateY(-1px);
+        }
+        .auth-btn:active:not(:disabled) { transform: translateY(1px); box-shadow: none; }
+        .auth-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .auth-btn.secondary-btn {
+            background: var(--bg-template);
+            color: var(--color-text);
+            border: 1px solid var(--color-border);
+            box-shadow: none;
+        }
+        .auth-btn.secondary-btn:hover:not(:disabled) {
+            background: var(--bg-home);
+            border-color: var(--color-text-muted);
+            box-shadow: none;
+        }
+        .auth-btn.danger-btn {
+            background: var(--color-danger);
+        }
+        .auth-btn.danger-btn:hover:not(:disabled) {
+            background: #dc2626;
+        }
+
+        .auth-link {
+            color: var(--color-primary);
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 13px;
+        }
+        .auth-link:hover { text-decoration: underline; }
+
+        .auth-footer {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 13px;
+            color: var(--color-text-muted);
+        }
+
+        .auth-error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 10px 14px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 18px;
+            display: none;
+        }
+        .auth-error.visible { display: block; }
+
+        .auth-progress {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            color: #4338ca;
+            font-weight: 500;
+            margin-bottom: 18px;
+        }
+        .auth-progress.visible { display: flex; }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .spinner {
+            width: 16px; height: 16px;
+            border: 2px solid #c7d2fe;
+            border-top-color: var(--color-primary);
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
+            flex-shrink: 0;
+        }
+
+        /* Recovery key display */
+        .recovery-key-box {
+            background: #fffbeb;
+            border: 2px solid #fbbf24;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .recovery-key-value {
+            font-family: var(--font-mono);
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--color-text);
+            letter-spacing: 1.5px;
+            word-break: break-all;
+            line-height: 1.8;
+            margin: 12px 0;
+            user-select: all;
+        }
+        .recovery-key-warning {
+            font-size: 12px;
+            color: #92400e;
+            font-weight: 600;
+            line-height: 1.5;
+        }
+
+        .pw-strength {
+            height: 3px;
+            border-radius: 2px;
+            background: var(--color-border);
+            margin-top: 8px;
+            overflow: hidden;
+        }
+        .pw-strength-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+            width: 0%;
+        }
+
+        .hidden { display: none !important; }
+
+        /* === MAIN APP (existing styles, cleaned up) === */
+        .app-wrapper { padding: 16px; }
+        .container { width: 100%; max-width: 1900px; margin: auto; position: relative; }
+
+        .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; gap: 12px; }
+        h1 { margin: 0; font-size: 1.4em; color: var(--color-text); letter-spacing: -0.5px; font-weight: 800; display: flex; align-items: center; gap: 8px; }
+        .app-icon { background: var(--color-primary); color: white; padding: 4px 6px; border-radius: 6px; font-size: 0.85em; }
+        .toolbar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+        button { font-family: var(--font-body); background-color: var(--color-primary); color: white; border: none; cursor: pointer; font-weight: 600; padding: 6px 12px; border-radius: var(--radius-md); transition: all 0.2s; font-size: 0.9em; box-shadow: var(--shadow-sm); }
+        button:hover { background-color: var(--color-primary-hover); box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        button:active { transform: translateY(1px); box-shadow: none; }
+        button.secondary { background-color: var(--bg-template); color: var(--color-text); border: 1px solid var(--color-border); box-shadow: none; }
+        button.secondary:hover { background-color: var(--bg-home); border-color: var(--color-text-muted); }
+        button.danger { background-color: var(--color-danger); color: white; border: none; }
+        button.danger:hover { background-color: #dc2626; }
+
+        input, select, textarea { padding: 8px; border: 1px solid var(--color-border); border-radius: var(--radius-md); box-sizing: border-box; font-size: 0.9em; font-family: var(--font-body); background: var(--bg-template); color: var(--color-text); transition: border-color 0.2s, box-shadow 0.2s; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.2); }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-content { display: none; position: absolute; right: 0; top: 115%; background-color: var(--bg-template); min-width: 240px; box-shadow: var(--shadow-lg); z-index: 2000; border-radius: var(--radius-lg); border: 1px solid var(--color-border); flex-direction: column; padding: 8px 0; }
+        .dropdown-content.show { display: flex; }
+        .dropdown-item { padding: 10px 16px; color: var(--color-text); text-decoration: none; font-size: 0.9em; font-weight: 500; cursor: pointer; transition: background 0.2s; display: flex; justify-content: space-between; align-items: center; }
+        .dropdown-item:hover { background-color: var(--bg-home); color: var(--color-primary); }
+        .dropdown-item.danger-text { color: var(--color-danger); border-top: 1px solid var(--color-border); margin-top: 4px; padding-top: 10px; }
+        .dropdown-item.danger-text:hover { color: white; background-color: var(--color-danger); }
+
+        .layout { display: flex; gap: 20px; align-items: flex-start; height: calc(100vh - 90px); }
+        .main-content { flex: 1; min-width: 0; position: relative; height: 100%; overflow: auto; border-radius: var(--radius-lg); transition: background 0.2s; }
+        .main-content.show-grid { background-size: 20px 20px; background-image: linear-gradient(to right, rgba(99,102,241,0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(99,102,241,0.1) 1px, transparent 1px); background-color: var(--bg-template); border: 1px dashed var(--color-primary); }
+        .sidebar { width: 320px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px; position: sticky; top: 0; height: 100%; overflow-y: auto; padding-right: 6px; padding-bottom: 20px; }
+        .sidebar::-webkit-scrollbar, .main-content::-webkit-scrollbar { width: 6px; height: 6px; }
+        .sidebar::-webkit-scrollbar-thumb, .main-content::-webkit-scrollbar-thumb { background-color: var(--color-border); border-radius: 10px; }
+
+        @media (max-width: 900px) {
+            .layout { flex-direction: column; height: auto; }
+            .sidebar { width: 100%; position: static; height: auto; overflow-y: visible; }
+            .main-content { min-height: 80vh; }
+        }
+
+        .widget { background: var(--bg-template); padding: 16px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--color-border); }
+        .widget-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--color-border); padding-bottom: 10px; margin-bottom: 12px; }
+        .widget-header h3 { margin: 0; color: var(--color-text); font-size: 1.05em; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+        .widget-arrows { display: flex; gap: 4px; }
+        .arrow-btn { background: transparent; color: var(--color-text-muted); border: 1px solid var(--color-border); padding: 2px 6px; font-size: 0.8em; border-radius: 4px; box-shadow: none; cursor: pointer; transition: all 0.2s; }
+        .arrow-btn:hover { background: var(--bg-home); color: var(--color-primary); border-color: var(--color-primary); transform: translateY(0); }
+
+        .order-list-container { display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; padding-right: 4px; margin-top: 5px; }
+        .order-item { background: var(--bg-template); border: 1px solid var(--color-border); padding: 6px 10px; border-radius: var(--radius-md); font-size: 0.85em; font-weight: 600; cursor: grab; display: flex; justify-content: flex-start; align-items: center; gap: 10px; transition: background 0.2s; }
+        .order-item:hover { background: var(--bg-home); border-color: var(--color-text-muted); }
+        .order-item.drag-over { border-top: 2px solid var(--color-primary); }
+        .order-item .drag-icon { color: var(--color-text-muted); font-size: 1.2em; }
+
+        .category { position: absolute; background: var(--bg-template); padding: 12px; border-radius: var(--radius-lg); box-shadow: var(--shadow-md); border: 1px solid var(--color-border); border-top: 3px solid var(--color-primary); height: fit-content; resize: both; overflow: hidden; width: 300px; min-width: 220px; min-height: 120px; display: flex; flex-direction: column; z-index: 10; }
+        .category-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid var(--color-border); padding-bottom: 8px; flex-shrink: 0; }
+        .category h2 { font-size: 1.05em; margin: 0; color: var(--color-text); font-weight: 700; display: flex; align-items: center; gap: 8px; }
+        .category.animating { transition: left 0.4s cubic-bezier(0.25,1,0.5,1), top 0.4s cubic-bezier(0.25,1,0.5,1) !important; }
+        .drag-handle { cursor: grab; color: var(--color-text-muted); background: var(--bg-home); padding: 4px 6px; border-radius: var(--radius-md); font-size: 0.9em; line-height: 1; user-select: none; transition: all 0.2s; touch-action: none; }
+        .drag-handle:hover { color: white; background: var(--color-primary); }
+        .category.dragging { cursor: grabbing; opacity: 0.95; box-shadow: var(--shadow-lg); z-index: 999 !important; border-color: var(--color-primary); }
+        .category.dragging .drag-handle { cursor: grabbing; color: white; background: var(--color-primary); }
+
+        .pomo-display { font-size: 3em; font-family: var(--font-mono); font-weight: 800; text-align: center; margin: 5px 0 15px 0; color: var(--color-text); font-variant-numeric: tabular-nums; }
+        .pomo-controls { display: flex; justify-content: center; gap: 8px; align-items: center; }
+        .pomo-controls input { width: 50px; text-align: center; font-weight: bold; font-size: 1em; }
+        .cost-display { font-size: 2.2em; font-family: var(--font-mono); font-weight: 800; text-align: center; margin: 5px 0 12px 0; color: var(--color-danger); font-variant-numeric: tabular-nums; }
+        .tool-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9em; margin-bottom: 10px; gap: 8px; }
+        .tool-row input { width: 60px; padding: 6px; }
+        .tool-row input[type="text"] { width: 100%; padding: 8px; }
+
+        dialog { border: none; border-radius: var(--radius-lg); box-shadow: 0 20px 40px rgba(0,0,0,0.2); max-width: 450px; width: 90%; padding: 24px; background: var(--bg-template); color: var(--color-text); }
+        dialog::backdrop { background: rgba(15,23,42,0.6); backdrop-filter: blur(3px); }
+        .dialog-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--color-border); padding-bottom: 12px; margin-bottom: 16px; }
+        .modal-title-input { font-size: 1.2em; font-weight: 800; color: var(--color-text); border: none; border-bottom: 1px solid transparent; width: 100%; background: transparent; padding: 2px 0; font-family: var(--font-body); }
+        .modal-text-input { width: 100%; min-height: 100px; resize: vertical; padding: 10px; margin-bottom: 16px; }
+
+        .emoji-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(32px, 1fr)); gap: 6px; max-height: 120px; overflow-y: auto; background: var(--bg-home); padding: 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); margin-top: 4px; margin-bottom: 8px; }
+        .emoji-btn { text-align: center; cursor: pointer; padding: 4px 0; border-radius: 4px; transition: all 0.2s; font-size: 1.3em; border: 1px solid transparent; user-select: none; }
+        .emoji-btn:hover { background: var(--bg-template); border-color: var(--color-primary); transform: scale(1.15); }
+
+        .clocks-container { display: flex; flex-direction: column; gap: 8px; max-height: 250px; overflow-y: auto; padding-right: 4px; }
+        .clock-item { background: var(--bg-home); color: var(--color-text); padding: 10px 12px; border-radius: var(--radius-md); display: flex; flex-direction: column; position: relative; border: 1px solid var(--color-border); }
+        .clock-label { font-size: 0.7em; color: var(--color-text-muted); font-weight: 700; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .clock-time { font-family: var(--font-mono); font-size: 1.2em; font-weight: 700; pointer-events: none; font-variant-numeric: tabular-nums; }
+
+        .notes-list { list-style: none; padding: 0; margin: 12px 0 0 0; display: flex; flex-direction: column; gap: 6px; max-height: 200px; overflow-y: auto; }
+        .note-item { background: var(--bg-home); border-left: 3px solid var(--color-primary); padding: 8px 10px; border-radius: var(--radius-md); font-size: 0.85em; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-top: 1px solid var(--color-border); border-right: 1px solid var(--color-border); border-bottom: 1px solid var(--color-border); transition: all 0.2s; }
+        .note-item:hover { background: #f1f5f9; transform: translateX(2px); }
+
+        ul.link-list { list-style-type: none; padding: 0; margin: 0; flex-grow: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; overflow-x: hidden; padding-right: 4px; }
+        ul.link-list::-webkit-scrollbar { width: 4px; }
+        ul.link-list::-webkit-scrollbar-thumb { background-color: var(--color-border); border-radius: 4px; }
+        li.link-item { display: flex; flex-direction: column; background: var(--bg-home); padding: 8px 10px; border-radius: var(--radius-md); border: 1px solid var(--color-border); position: relative; transition: all 0.2s; }
+        li.link-item:hover { box-shadow: var(--shadow-sm); border-color: #cbd5e1; }
+        .link-header { display: flex; align-items: flex-start; gap: 8px; width: 100%; padding-right: 35px; }
+        .link-icon { width: 16px; height: 16px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--color-text-muted); margin-top: 2px; }
+        .link-icon svg { width: 100%; height: 100%; fill: currentColor; }
+        .link-title { text-decoration: none; color: var(--color-text); font-weight: 600; word-break: break-word; white-space: normal; line-height: 1.3; font-size: 0.9em; }
+        .link-title:hover { text-decoration: underline; color: var(--color-primary); }
+        .link-desc { font-size: 0.8em; color: var(--color-text-muted); margin-top: 4px; margin-left: 24px; line-height: 1.3; word-break: break-word; }
+
+        .bucket-add-btn { width: 100%; text-align: center; padding: 8px; cursor: pointer; color: var(--color-text-muted); font-weight: 600; background: transparent; border: 1px dashed var(--color-border); border-radius: var(--radius-md); transition: all 0.2s; font-size: 0.8em; margin-top: 8px; box-shadow: none; }
+        .bucket-add-btn:hover { background: var(--bg-home); border-color: var(--color-primary); color: var(--color-primary); transform: none; box-shadow: none; }
+
+        .hover-actions { position: absolute; top: 6px; right: 6px; display: flex; gap: 4px; opacity: 0; transition: opacity 0.2s; pointer-events: none; background: var(--bg-home); padding-left: 4px; }
+        .category-header:hover .hover-actions, .link-item:hover .hover-actions { opacity: 1; pointer-events: auto; }
+        .hover-actions button { padding: 2px 6px; font-size: 0.7em; border-radius: 4px; }
+        @media (hover: none) { .hover-actions { opacity: 0.8; pointer-events: auto; position: static; background: transparent; margin-top: 6px; justify-content: flex-end; } .link-header { padding-right: 0; } }
+
+        .segmented-control { display: flex; background: var(--bg-home); border-radius: var(--radius-md); padding: 3px; margin-bottom: 12px; border: 1px solid var(--color-border); }
+        .seg-btn { flex: 1; border-radius: 4px; padding: 6px; font-size: 0.85em; font-weight: 600; border: none; cursor: pointer; transition: all 0.2s; box-shadow: none; }
+        .seg-btn.active { background: var(--bg-template); color: var(--color-primary); box-shadow: var(--shadow-sm); }
+        .seg-btn.inactive { background: transparent; color: var(--color-text-muted); }
+        .seg-btn.inactive:hover { color: var(--color-text); }
+
+        /* Maturity Meter */
+        .maturity-meter { flex: 1; min-width: 200px; max-width: 400px; padding: 10px 14px; background: var(--bg-template); border-radius: var(--radius-md); border: 1px solid var(--color-border); display: flex; align-items: center; gap: 12px; }
+        .maturity-meter-labels { display: flex; justify-content: space-between; font-size: 0.7em; font-weight: 800; text-transform: uppercase; color: var(--color-text-muted); margin-bottom: 4px; letter-spacing: 0.3px; }
+        .maturity-bar { width: 100%; height: 8px; background: var(--bg-home); border-radius: 4px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.1); }
+        .maturity-bar-fill { height: 100%; border-radius: 4px; transition: width 0.5s ease, background 0.5s ease; }
+        .maturity-emoji { font-size: 1.5em; flex-shrink: 0; }
+
+        /* Case Metadata Badges */
+        .case-meta { display: flex; gap: 4px; margin-top: 4px; margin-left: 24px; flex-wrap: wrap; }
+        .case-badge { font-size: 0.7em; font-weight: 700; padding: 1px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.3px; white-space: nowrap; }
+        .case-badge.strategic { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+        .case-badge.reactive { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .case-badge.est { background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; }
+        .case-badge.source { background: #f5f3ff; color: #5b21b6; border: 1px solid #ddd6fe; }
+        .case-badge.bumps { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .case-badge.actual { background: #ecfdf5; color: #065f46; border: 1px solid #6ee7b7; }
+
+        /* Maintenance Mode */
+        .maintenance-btn { position: relative; }
+        .maintenance-btn.active { background: var(--color-warning); color: #451a03; border-color: #f59e0b; }
+        .maintenance-btn.active:hover { background: #d97706; }
+
+        /* Bucket Empty State */
+        .bucket-empty-state { text-align: center; padding: 16px 12px; color: var(--color-text-muted); font-size: 0.85em; font-style: italic; line-height: 1.5; }
+
+        /* Case Key Badge */
+        .case-key { font-family: var(--font-mono); font-size: 0.65em; font-weight: 600; color: var(--color-text-muted); background: var(--bg-home); border: 1px solid var(--color-border); padding: 1px 5px; border-radius: 3px; letter-spacing: 0.5px; white-space: nowrap; flex-shrink: 0; margin-top: 2px; }
+
+        /* Actionable Toggle */
+        .actionable-toggle { display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: var(--bg-home); border-radius: var(--radius-md); border: 1px solid var(--color-border); cursor: pointer; user-select: none; transition: all 0.2s; }
+        .actionable-toggle:hover { border-color: var(--color-primary); }
+        .actionable-toggle.active { background: #eef2ff; border-color: var(--color-primary); }
+        .actionable-toggle input[type="checkbox"] { width: auto; margin: 0; cursor: pointer; accent-color: var(--color-primary); }
+        .actionable-fields { display: none; flex-direction: column; gap: 10px; padding: 12px; background: #fafbff; border: 1px solid #e0e7ff; border-radius: var(--radius-md); }
+        .actionable-fields.visible { display: flex; }
+
+        /* Resources List */
+        .resources-list { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+        .resource-row { display: flex; gap: 6px; align-items: center; }
+        .resource-row input { flex: 1; padding: 6px 8px; font-size: 0.85em; }
+        .resource-row button { padding: 4px 8px; font-size: 0.8em; flex-shrink: 0; }
+        .resource-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 0.75em; background: var(--bg-home); border: 1px solid var(--color-border); border-radius: 4px; padding: 2px 6px; max-width: 180px; }
+        .resource-chip a { color: var(--color-primary); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+        .resource-chip a:hover { text-decoration: underline; }
+        .resource-chip .remove-resource { cursor: pointer; color: var(--color-text-muted); font-weight: 700; line-height: 1; }
+        .resource-chip .remove-resource:hover { color: var(--color-danger); }
+
+        /* Collapsible resources on cards (Epic 18) */
+        .resources-collapsible { margin-top: 4px; margin-left: 24px; }
+        .resources-collapsible summary { font-size: 0.75em; font-weight: 600; color: var(--color-text-muted); cursor: pointer; user-select: none; list-style: none; padding: 2px 0; }
+        .resources-collapsible summary::-webkit-details-marker { display: none; }
+        .resources-collapsible summary::before { content: '▸ '; font-size: 0.9em; }
+        .resources-collapsible[open] summary::before { content: '▾ '; }
+        .resources-collapsible .resource-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+
+        /* SVG icon button (Epic 19) */
+        .icon-btn { display: inline-flex; align-items: center; justify-content: center; padding: 3px 5px; }
+        .icon-btn svg { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+
+        /* Feedback modal (Epic 21) */
+        .feedback-success { text-align: center; padding: 16px; color: var(--color-success); font-weight: 700; font-size: 1.1em; }
+
+        /* Subtasks */
+        .subtask-section { border-top: 1px dashed var(--color-border); padding-top: 12px; }
+        .subtask-list { display: flex; flex-direction: column; gap: 4px; margin-top: 6px; max-height: 150px; overflow-y: auto; }
+        .subtask-item { display: flex; align-items: center; gap: 8px; padding: 5px 8px; background: var(--bg-home); border-radius: 4px; border: 1px solid var(--color-border); font-size: 0.85em; }
+        .subtask-item.completed span { text-decoration: line-through; color: var(--color-text-muted); }
+        .subtask-item input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--color-success); cursor: pointer; }
+        .subtask-item span { flex: 1; }
+        .subtask-item .subtask-est { font-family: var(--font-mono); font-size: 0.8em; color: var(--color-text-muted); }
+        .subtask-item button { padding: 1px 5px; font-size: 0.7em; }
+        .subtask-add-row { display: flex; gap: 6px; margin-top: 6px; }
+        .subtask-add-row input[type="text"] { flex: 1; padding: 6px 8px; font-size: 0.85em; }
+        .subtask-add-row input[type="number"] { width: 55px; padding: 6px; font-size: 0.85em; text-align: center; }
+
+        /* Activity Feed */
+        .activity-section { border-top: 1px dashed var(--color-border); padding-top: 12px; }
+        .activity-feed { display: flex; flex-direction: column; gap: 6px; max-height: 160px; overflow-y: auto; margin-top: 6px; padding-right: 4px; }
+        .activity-entry { font-size: 0.8em; padding: 6px 8px; background: var(--bg-home); border-radius: 4px; border-left: 3px solid var(--color-border); line-height: 1.4; }
+        .activity-entry.type-blocker { border-left-color: var(--color-danger); }
+        .activity-entry.type-insight { border-left-color: var(--color-primary); }
+        .activity-entry.type-update { border-left-color: var(--color-success); }
+        .activity-entry.type-note { border-left-color: var(--color-warning); }
+        .activity-entry .activity-meta { font-size: 0.85em; color: var(--color-text-muted); margin-top: 2px; }
+        .activity-add-row { display: flex; gap: 6px; margin-top: 6px; }
+        .activity-add-row select { padding: 6px; font-size: 0.85em; }
+        .activity-add-row input { flex: 1; padding: 6px 8px; font-size: 0.85em; }
+
+        /* User badge in header */
+        .user-badge { display: flex; align-items: center; gap: 8px; font-size: 0.85em; color: var(--color-text-muted); font-weight: 500; }
+        .user-badge-email { max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        /* Quick Capture Inbox (Epic 1) */
+        .quick-capture { display: flex; gap: 8px; align-items: center; padding: 8px 0; margin-bottom: 4px; }
+        .quick-capture input { flex: 1; padding: 10px 14px; border: 1px dashed var(--color-border); border-radius: var(--radius-md); font-family: var(--font-body); font-size: 0.9em; background: var(--bg-template); transition: border-color 0.2s, box-shadow 0.2s; }
+        .quick-capture input:focus { border-style: solid; border-color: var(--color-primary); box-shadow: 0 0 0 3px rgba(99,102,241,0.15); outline: none; }
+        .quick-capture input::placeholder { color: var(--color-text-muted); font-style: italic; }
+
+        /* Promote to Case button */
+        .promote-btn { font-size: 0.7em; padding: 2px 6px; background: #eef2ff; color: var(--color-primary); border: 1px solid #c7d2fe; border-radius: 3px; cursor: pointer; font-weight: 600; white-space: nowrap; transition: all 0.2s; box-shadow: none; }
+        .promote-btn:hover { background: var(--color-primary); color: white; transform: none; }
+
+        /* Epic 14: View Toggle Segmented Control */
+        .view-toggle { display: flex; background: var(--bg-home); border-radius: var(--radius-md); padding: 3px; border: 1px solid var(--color-border); margin: 0 12px; flex-shrink: 0; }
+        .view-toggle-btn { padding: 6px 14px; font-size: 0.85em; font-weight: 700; border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s; background: transparent; color: var(--color-text-muted); white-space: nowrap; box-shadow: none; font-family: var(--font-body); }
+        .view-toggle-btn:hover { color: var(--color-text); transform: none; }
+        .view-toggle-btn.active { background: var(--bg-template); color: var(--color-primary); box-shadow: var(--shadow-sm); }
+
+        /* Epic 16: Tinted priority cards */
+        li.link-item.tint-high { background: rgba(239, 68, 68, 0.05); border-color: rgba(239, 68, 68, 0.35); }
+        li.link-item.tint-high:hover { border-color: rgba(239, 68, 68, 0.5); }
+        li.link-item.tint-med { background: rgba(245, 158, 11, 0.05); border-color: rgba(245, 158, 11, 0.3); }
+        li.link-item.tint-med:hover { border-color: rgba(245, 158, 11, 0.45); }
+        li.link-item.tint-low { background: rgba(16, 185, 129, 0.04); border-color: rgba(16, 185, 129, 0.25); }
+
+        /* Completed items (Epic 12) */
+        li.link-item.completed-item { opacity: 0.55; }
+        li.link-item.completed-item .link-title { text-decoration: line-through; color: var(--color-text-muted); }
+        li.link-item.completed-item .case-meta { opacity: 0.6; }
+
+        /* Archive toggle */
+        .archive-btn.active { background: #f5f3ff; color: #7c3aed; border-color: #c4b5fd; }
+        .archive-btn.active:hover { background: #ede9fe; }
+
+        /* Priority badge */
+        .case-badge.priority-high { background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .case-badge.priority-med { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+        .case-badge.priority-low { background: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+        /* Due date */
+        .due-date-badge { font-family: var(--font-mono); font-size: 0.7em; color: var(--color-text-muted); }
+        .due-date-badge.overdue { color: var(--color-danger); font-weight: 700; }
+
+        /* Pomo mark-complete row */
+        .pomo-complete-row { display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--radius-md); font-size: 0.85em; font-weight: 500; color: #166534; }
+        .pomo-complete-row input[type="checkbox"] { width: auto; margin: 0; accent-color: var(--color-success); cursor: pointer; }
+
+        /* Unified taxonomy optgroup styling */
+        select optgroup { font-weight: 700; font-style: normal; }
+
+        /* Capacity Indicator (Epic 4) */
+        .capacity-badge { font-size: 0.7em; font-weight: 700; font-family: var(--font-mono); padding: 2px 6px; border-radius: 3px; background: var(--bg-home); border: 1px solid var(--color-border); white-space: nowrap; margin-left: 6px; }
+        .capacity-badge.warning { color: var(--color-warning); border-color: #fde68a; background: #fffbeb; }
+        .capacity-badge.danger { color: var(--color-danger); border-color: #fecaca; background: #fef2f2; }
+
+        /* KPI Dashboard (Epic 5) */
+        .dashboard-view { display: none; padding: 20px; }
+        .dashboard-view.visible { display: block; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+        .dash-card { background: var(--bg-template); border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 20px; box-shadow: var(--shadow-sm); }
+        .dash-card h4 { margin: 0 0 12px 0; font-size: 0.85em; font-weight: 800; text-transform: uppercase; letter-spacing: 0.3px; color: var(--color-text-muted); }
+        .dash-metric { font-size: 2em; font-weight: 800; font-family: var(--font-mono); color: var(--color-text); font-variant-numeric: tabular-nums; }
+        .dash-sub { font-size: 0.85em; color: var(--color-text-muted); margin-top: 4px; }
+        .dash-bar-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 0.85em; }
+        .dash-bar-label { width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+        .dash-bar-track { flex: 1; height: 8px; background: var(--bg-home); border-radius: 4px; overflow: hidden; }
+        .dash-bar-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
+        .dash-bar-value { font-family: var(--font-mono); font-size: 0.85em; width: 40px; text-align: right; color: var(--color-text-muted); }
+
+        /* Weekly Review toggle */
+        .review-btn.active { background: var(--color-primary); color: white; }
+
+        /* Settings Modal (Epic 3) */
+        .taxonomy-group { margin-bottom: 12px; }
+        .taxonomy-group-header { font-size: 0.8em; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
+        .taxonomy-tag { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; font-size: 0.8em; background: var(--bg-home); border: 1px solid var(--color-border); border-radius: 4px; margin: 2px; }
+        .taxonomy-tag .remove-tag { cursor: pointer; color: var(--color-text-muted); font-weight: 700; }
+        .taxonomy-tag .remove-tag:hover { color: var(--color-danger); }
+        .taxonomy-add-row { display: flex; gap: 6px; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<!-- ========== AUTH SCREENS ========== -->
+<div id="authScreen" class="auth-wrapper">
+
+    <!-- LOGIN -->
+    <div id="loginView" class="auth-card">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">PS</div>
+            <div class="auth-brand-name">Productivity Sidekick</div>
+        </div>
+        <h2 class="auth-heading">Welcome back</h2>
+        <p class="auth-subtext">Sign in to access your encrypted workspace.</p>
+        <div id="loginError" class="auth-error"></div>
+        <div id="loginProgress" class="auth-progress"><div class="spinner"></div><span>Deriving encryption keys…</span></div>
+        <div class="auth-field">
+            <label class="auth-label" for="loginEmail">Email</label>
+            <input type="email" id="loginEmail" class="auth-input" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="loginPassword">Master password</label>
+            <input type="password" id="loginPassword" class="auth-input" placeholder="Your master password" autocomplete="current-password">
+        </div>
+        <button id="loginBtn" class="auth-btn" style="margin-top: 8px;">Sign In</button>
+        <div class="auth-footer">
+            Don't have an account? <span id="showRegister" class="auth-link">Create one</span>
+            <br>
+            <span id="showRecovery" class="auth-link" style="font-size: 12px; margin-top: 8px; display: inline-block;">Forgot password?</span>
+        </div>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="registerView" class="auth-card hidden">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">PS</div>
+            <div class="auth-brand-name">Productivity Sidekick</div>
+        </div>
+        <h2 class="auth-heading">Create your account</h2>
+        <p class="auth-subtext">Your data is end-to-end encrypted. We can never see your bookmarks, notes, or sessions.</p>
+        <div id="registerError" class="auth-error"></div>
+        <div id="registerProgress" class="auth-progress"><div class="spinner"></div><span>Generating encryption keys…</span></div>
+        <div class="auth-field">
+            <label class="auth-label" for="registerEmail">Email</label>
+            <input type="email" id="registerEmail" class="auth-input" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="registerPassword">Master password</label>
+            <input type="password" id="registerPassword" class="auth-input" placeholder="Min 10 characters" autocomplete="new-password">
+            <div class="pw-strength"><div id="pwStrengthFill" class="pw-strength-fill"></div></div>
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="registerPasswordConfirm">Confirm password</label>
+            <input type="password" id="registerPasswordConfirm" class="auth-input" placeholder="Re-enter password" autocomplete="new-password">
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="registerCode">Beta Access Code <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="registerCode" class="auth-input mono" placeholder="Enter your invite code" autocomplete="off">
+        </div>
+        <button id="registerBtn" class="auth-btn" style="margin-top: 8px;">Create Account</button>
+        <div class="auth-footer">
+            Already have an account? <span id="showLogin" class="auth-link">Sign in</span>
+        </div>
+    </div>
+
+    <!-- RECOVERY KEY DISPLAY (shown after registration) -->
+    <div id="recoveryKeyView" class="auth-card hidden">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">PS</div>
+            <div class="auth-brand-name">Productivity Sidekick</div>
+        </div>
+        <h2 class="auth-heading">Save your recovery key</h2>
+        <p class="auth-subtext">This is the <strong>only way</strong> to recover your data if you forget your password. Write it down or save it somewhere safe — it will never be shown again.</p>
+        <div class="recovery-key-box">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #92400e; margin-bottom: 8px;">Your Recovery Key</div>
+            <div id="recoveryKeyDisplay" class="recovery-key-value"></div>
+            <div class="recovery-key-warning">Store this somewhere safe. Without it, a forgotten password means permanent data loss.</div>
+        </div>
+        <button id="copyRecoveryKey" class="auth-btn secondary-btn" style="margin-bottom: 10px;">Copy to Clipboard</button>
+        <button id="confirmRecoveryKey" class="auth-btn">I've saved my recovery key — Continue</button>
+    </div>
+
+    <!-- RECOVERY FLOW -->
+    <div id="recoveryView" class="auth-card hidden">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">PS</div>
+            <div class="auth-brand-name">Productivity Sidekick</div>
+        </div>
+        <h2 class="auth-heading">Account recovery</h2>
+        <p class="auth-subtext">Enter your recovery key to reset your master password. Your encrypted data will be preserved.</p>
+        <div id="recoveryError" class="auth-error"></div>
+        <div id="recoveryProgress" class="auth-progress"><div class="spinner"></div><span>Recovering account…</span></div>
+        <div class="auth-field">
+            <label class="auth-label" for="recoveryEmail">Email</label>
+            <input type="email" id="recoveryEmail" class="auth-input" placeholder="you@example.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="recoveryKeyInput">Recovery key</label>
+            <input type="text" id="recoveryKeyInput" class="auth-input mono" placeholder="XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX">
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="recoveryNewPassword">New master password</label>
+            <input type="password" id="recoveryNewPassword" class="auth-input" placeholder="Min 10 characters" autocomplete="new-password">
+        </div>
+        <div class="auth-field">
+            <label class="auth-label" for="recoveryNewPasswordConfirm">Confirm new password</label>
+            <input type="password" id="recoveryNewPasswordConfirm" class="auth-input" placeholder="Re-enter password" autocomplete="new-password">
+        </div>
+        <button id="recoveryBtn" class="auth-btn" style="margin-top: 8px;">Reset Password</button>
+        <div class="auth-footer">
+            <span id="backToLogin" class="auth-link">Back to sign in</span>
+        </div>
+    </div>
+
+    <!-- NEW RECOVERY KEY (shown after successful recovery) -->
+    <div id="newRecoveryKeyView" class="auth-card hidden">
+        <div class="auth-brand">
+            <div class="auth-brand-icon">PS</div>
+            <div class="auth-brand-name">Productivity Sidekick</div>
+        </div>
+        <h2 class="auth-heading">New recovery key generated</h2>
+        <p class="auth-subtext">Your password has been reset. A new recovery key was generated — your old one no longer works.</p>
+        <div class="recovery-key-box">
+            <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #92400e; margin-bottom: 8px;">New Recovery Key</div>
+            <div id="newRecoveryKeyDisplay" class="recovery-key-value"></div>
+            <div class="recovery-key-warning">Your old recovery key is now invalid. Save this new one.</div>
+        </div>
+        <button id="copyNewRecoveryKey" class="auth-btn secondary-btn" style="margin-bottom: 10px;">Copy to Clipboard</button>
+        <button id="confirmNewRecoveryKey" class="auth-btn">I've saved it — Continue</button>
+    </div>
+</div>
+
+<!-- ========== MAIN APP ========== -->
+<div id="appScreen" class="hidden">
+    <div class="app-wrapper">
+        <div class="container" id="appContainer">
+            <div class="header-section">
+                <div>
+                    <h1><span class="app-icon">PS</span> Productivity Sidekick</h1>
+                </div>
+
+                <!-- Epic 14: View Toggle -->
+                <div class="view-toggle" id="viewToggle">
+                    <button class="view-toggle-btn" id="btnViewLibrary">📚 Library</button>
+                    <button class="view-toggle-btn active" id="btnViewWorkspace">⚡ Workspace</button>
+                </div>
+
+                <div class="maturity-meter" id="maturityMeterContainer">
+                    <div style="flex-grow:1;">
+                        <div class="maturity-meter-labels">
+                            <span>Strategy Ratio</span><span id="maturityStatusLabel">The Firefighter</span>
+                        </div>
+                        <div class="maturity-bar">
+                            <div id="strategyBar" class="maturity-bar-fill" style="width:0%; background:var(--color-danger);"></div>
+                        </div>
+                    </div>
+                    <div id="maturityEmoji" class="maturity-emoji">🚒</div>
+                </div>
+
+                <div class="toolbar">
+                    <div class="user-badge">
+                        <span class="user-badge-email" id="userEmailDisplay"></span>
+                    </div>
+                    <button class="secondary" id="btnAddBucket">+ Add Bucket</button>
+                    <button class="secondary" id="btnAddCase">+ Add Case</button>
+                    <button class="secondary maintenance-btn" id="btnMaintenance" title="Show only cases bumped 3+ times">🔧 Maintenance</button>
+                    <button class="secondary archive-btn" id="btnArchive" title="Show completed items">👁️ Archive</button>
+                    <button class="secondary review-btn" id="btnWeeklyReview" title="Toggle Weekly Review dashboard">📊 Review</button>
+                    <button class="secondary" id="btnAutoOrganize" title="Automatically pack and organize lists">🪄 Auto-Organize</button>
+                    <button class="secondary" id="btnFeedback" title="Send feedback to the dev team" style="background:#f5f3ff; color:#7c3aed; border-color:#c4b5fd;">💬 Feedback</button>
+                    <div class="dropdown">
+                        <button class="secondary" id="btnConfigDropdown" style="font-size: 1.1em; padding: 6px 10px;">⚙️</button>
+                        <div id="configDropdown" class="dropdown-content">
+                            <div style="padding: 8px 16px;">
+                                <label style="font-size: 0.75em; font-weight: 700; color: var(--color-text-muted); text-transform: uppercase;">Sidebar Order</label>
+                                <div id="sidebarOrderList" class="order-list-container"></div>
+                            </div>
+                            <div style="border-top: 1px solid var(--color-border); margin: 6px 0;"></div>
+                            <div class="dropdown-item" id="btnSettings"><span>⚙️ Taxonomy Settings</span></div>
+                            <div class="dropdown-item" id="btnExport"><span>📥 Export Backup</span></div>
+                            <div class="dropdown-item" id="btnImportTrigger"><span>📤 Import Backup</span></div>
+                            <input type="file" id="importFile" style="display:none" accept=".json">
+                            <div class="dropdown-item" id="btnImportBookmarks"><span>🌐 Import Browser Bookmarks</span></div>
+                            <input type="file" id="importBookmarksFile" style="display:none" accept=".html">
+                            <div class="dropdown-item" id="btnLlmExport"><span>🤖 Download LLM Diagnostics</span></div>
+                            <div class="dropdown-item" id="btnToggleDebug">
+                                <span>🐛 Debug Logging</span>
+                                <span id="debugStatusLabel" style="color:var(--color-text-muted); font-size:0.8em; font-weight:bold;">OFF</span>
+                            </div>
+                            <div class="dropdown-item hidden" id="btnDownloadLog"><span>💾 Download Debug Log</span></div>
+                            <div style="border-top: 1px solid var(--color-border); margin: 6px 0;"></div>
+                            <div class="dropdown-item" id="btnResetLayout"><span>⚠️ Reset Board Position</span></div>
+                            <div class="dropdown-item danger-text" id="btnLogout"><span>🚪 Sign Out</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Capture (Epic 1) -->
+            <div class="quick-capture">
+                <input type="text" id="quickCaptureInput" placeholder="📋 Paste a URL or type a title and press Enter to capture...">
+            </div>
+
+            <div class="layout" id="boardLayout">
+                <main class="main-content" id="bucketBoard"></main>
+                <aside class="sidebar" id="sidebarContainer"></aside>
+            </div>
+
+            <!-- KPI Dashboard (Epic 5) -->
+            <div class="dashboard-view" id="dashboardView">
+                <div class="dashboard-grid" id="dashboardGrid"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========== DIALOGS ========== -->
+<dialog id="bucketModal">
+    <div class="dialog-header">
+        <h2 id="bucketModalTitle" style="margin:0; color:var(--color-text); font-weight:800; font-size:1.25em;">Add Bucket</h2>
+        <button class="secondary" id="bucketModalClose" style="height:fit-content; padding:4px 8px; font-size:0.8em;">X</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+        <input type="hidden" id="bucketModalOldName">
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Bucket Name <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="bucketModalName" placeholder="e.g. Q3 Reports" style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Bucket Icon</label>
+            <div style="font-size:0.75em; color:var(--color-text-muted); line-height:1.3; margin-top:2px;">Select an emoji to display next to the bucket title.</div>
+            <div class="emoji-grid" id="bucketEmojiGrid"></div>
+            <input type="text" id="bucketModalIcon" placeholder="Optional Emoji" style="width:100%;">
+        </div>
+        <button id="bucketModalSave" style="width:100%; margin-top:10px; padding:10px; font-size:1em;">Save Bucket</button>
+    </div>
+</dialog>
+
+<dialog id="linkModal" style="max-width:520px;">
+    <div class="dialog-header">
+        <h2 id="linkModalTitle" style="margin:0; color:var(--color-text); font-weight:800; font-size:1.25em;">Add Item</h2>
+        <button class="secondary" id="linkModalClose" style="height:fit-content; padding:4px 8px; font-size:0.8em;">X</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px; max-height:70vh; overflow-y:auto; padding-right:4px;">
+        <input type="hidden" id="linkModalId">
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Bucket</label>
+            <select id="linkModalCategory" style="width:100%; margin-top:4px; padding:8px;"></select>
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Title <span style="color:var(--color-danger)">*</span></label>
+            <input type="text" id="linkModalName" placeholder="E.g., QBR Template, Fix login bug" style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Context / Description</label>
+            <textarea id="linkModalDesc" placeholder="What is this about? Key details, context..." rows="2" style="width:100%; margin-top:4px; resize:vertical;"></textarea>
+        </div>
+
+        <!-- Resources (multiple URLs) -->
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Attached Resources</label>
+            <div style="font-size:0.7em; color:var(--color-text-muted); margin-top:2px;">Add links to docs, tickets, dashboards, etc.</div>
+            <div id="resourcesList" class="resources-list"></div>
+            <div class="resource-row" style="margin-top:6px;">
+                <input type="text" id="newResourceTitle" placeholder="Label (optional)" style="max-width:120px;">
+                <input type="url" id="newResourceUrl" placeholder="https://...">
+                <button class="secondary" id="btnAddResource" style="padding:6px 10px;">+ Add</button>
+            </div>
+        </div>
+
+        <!-- Actionable Toggle -->
+        <label class="actionable-toggle" id="actionableToggle">
+            <input type="checkbox" id="linkModalActionable">
+            <div>
+                <div style="font-weight:700; font-size:0.9em;">Make Actionable (Track KPIs)</div>
+                <div style="font-size:0.75em; color:var(--color-text-muted);">Enable work type, time estimates, and source tracking</div>
+            </div>
+        </label>
+
+        <!-- Conditional Actionable Fields -->
+        <div id="actionableFields" class="actionable-fields">
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Taxonomy</label>
+                    <select id="linkModalTaxonomy" style="width:100%; margin-top:4px; padding:8px;"></select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Est. Minutes</label>
+                    <input type="number" id="linkModalEstMins" placeholder="30" min="0" max="9999" style="width:100%; margin-top:4px; padding:8px;">
+                </div>
+            </div>
+            <div style="display:flex; gap:10px;">
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Priority</label>
+                    <select id="linkModalPriority" style="width:100%; margin-top:4px; padding:8px;">
+                        <option value="">— None —</option>
+                        <option value="high">🔴 High</option>
+                        <option value="med">🟡 Medium</option>
+                        <option value="low">🟢 Low</option>
+                    </select>
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Due Date</label>
+                    <input type="date" id="linkModalDueDate" style="width:100%; margin-top:4px; padding:8px;">
+                </div>
+            </div>
+            <div>
+                <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Source</label>
+                <select id="linkModalSource" style="width:100%; margin-top:4px; padding:8px;">
+                    <option value="">— None —</option>
+                    <option value="slack">💬 Slack</option>
+                    <option value="email">📧 Email</option>
+                    <option value="meeting">📅 Meeting</option>
+                    <option value="ticket">🎫 Ticket / JIRA</option>
+                    <option value="self">🧠 Self-Initiated</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Subtasks (Epic 3) -->
+        <div class="subtask-section" id="subtaskSection">
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Subtasks</label>
+            <div id="subtaskList" class="subtask-list"></div>
+            <div class="subtask-add-row">
+                <input type="text" id="newSubtaskTitle" placeholder="Subtask title...">
+                <input type="number" id="newSubtaskEst" placeholder="min" min="0" max="480">
+                <button class="secondary" id="btnAddSubtask" style="padding:6px 10px;">+</button>
+            </div>
+        </div>
+
+        <!-- Activity Feed (Epic 3) -->
+        <div class="activity-section" id="activitySection" style="display:none;">
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Activity Log</label>
+            <div id="activityFeed" class="activity-feed"></div>
+            <div class="activity-add-row">
+                <select id="activityType">
+                    <option value="update">✅ Update</option>
+                    <option value="blocker">🚧 Blocker</option>
+                    <option value="insight">💡 Insight</option>
+                    <option value="note">📝 Note</option>
+                </select>
+                <input type="text" id="activityContent" placeholder="Log an update...">
+                <button class="secondary" id="btnAddActivity" style="padding:6px 10px;">Post</button>
+            </div>
+        </div>
+
+        <!-- Icon -->
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Custom Icon (Optional)</label>
+            <div class="emoji-grid" id="urlEmojiGrid"></div>
+            <input type="text" id="linkModalIcon" placeholder="Emoji or Image URL" style="width:100%;">
+        </div>
+
+        <button id="linkModalSave" style="width:100%; margin-top:10px; padding:10px; font-size:1em;">Save Item</button>
+    </div>
+</dialog>
+
+<dialog id="pomoModal">
+    <div class="dialog-header">
+        <div style="flex-grow:1;">
+            <h2 style="margin:0; color:var(--color-primary); font-weight:800; font-size:1.25em;">Session Log</h2>
+            <div id="pomoStats" style="font-size:0.85em; color:var(--color-text-muted); margin-top:4px;">Time Logged: 0m</div>
+        </div>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+        <input type="text" id="pomoModalTask" readonly style="background:var(--bg-home); color:var(--color-text); border:none; padding:10px; font-weight:600; border-radius:var(--radius-md);">
+        <div>
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-text);">Was this session successful?</label>
+            <select id="pomoOutcome" style="width:100%; margin-top:4px;">
+                <option value="Success">✅ Yes - Task Completed / Progress Made</option>
+                <option value="Fail">❌ No - Interrupted or Blocked</option>
+            </select>
+        </div>
+        <div id="failReasonContainer" style="display:none; padding:10px; background:#fef2f2; border-radius:var(--radius-md); border:1px solid #fecaca;">
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-danger);">Reason for Interruption:</label>
+            <select id="pomoFailReason" style="width:100%; margin-top:4px; background:white;">
+                <option value="Interrupted by Co-worker">Interrupted by Co-worker</option>
+                <option value="System Issue / Slow Tools">System Issue / Slow Tools</option>
+                <option value="Personal Emergency">Personal Emergency</option>
+                <option value="Lost Focus / Distracted">Lost Focus / Distracted</option>
+                <option value="Underestimated Scope">Underestimated Scope</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-text);">Session Notes</label>
+            <textarea id="pomoNotes" placeholder="Quick notes on blockers or wins..." rows="2" style="width:100%; margin-top:4px;"></textarea>
+        </div>
+        <div class="pomo-complete-row">
+            <input type="checkbox" id="pomoMarkComplete">
+            <label for="pomoMarkComplete" style="cursor:pointer;">Mark task as Complete</label>
+        </div>
+        <button id="pomoSaveBtn" style="width:100%; margin-top:8px; font-size:1em; padding:10px;">Save to Daily Log</button>
+    </div>
+</dialog>
+
+<dialog id="noteModal">
+    <div class="dialog-header">
+        <div style="flex-grow:1; margin-right:15px;">
+            <input type="text" id="modalNoteTitle" class="modal-title-input" placeholder="Note Title">
+            <div id="modalDate" style="font-size:0.8em; color:var(--color-text-muted); margin-top:4px;">Date</div>
+        </div>
+        <button class="secondary" id="noteModalClose" style="height:fit-content; padding:4px 8px; font-size:0.8em;">Close</button>
+    </div>
+    <textarea id="modalTextEdit" class="modal-text-input" placeholder="Note content..."></textarea>
+    <div style="display:flex; gap:10px;">
+        <button id="saveNoteEditBtn" style="flex-grow:1;">Save Changes</button>
+        <button class="danger" id="deleteNoteBtn">Delete</button>
+    </div>
+</dialog>
+
+<dialog id="bumpModal">
+    <div class="dialog-header">
+        <h2 style="margin:0; color:var(--color-warning); font-weight:800; font-size:1.25em;">⤴️ Bump Case</h2>
+        <button class="secondary" id="bumpModalClose" style="height:fit-content; padding:4px 8px; font-size:0.8em;">X</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:14px;">
+        <input type="hidden" id="bumpModalLinkId">
+        <div style="background:var(--bg-home); padding:10px; border-radius:var(--radius-md); font-weight:600;" id="bumpModalTaskName"></div>
+        <div>
+            <label style="font-size:0.85em; font-weight:600; color:var(--color-text);">Why is this being bumped?</label>
+            <select id="bumpReason" style="width:100%; margin-top:4px; padding:8px;">
+                <option value="Firefight 🚒">🚒 Firefight — urgent work took priority</option>
+                <option value="Underestimated ⏳">⏳ Underestimated — needs more time</option>
+                <option value="Low Energy 🔋">🔋 Low Energy — not in the right headspace</option>
+                <option value="Overbooked 📅">📅 Overbooked — schedule conflict</option>
+            </select>
+        </div>
+        <button id="bumpModalSave" style="width:100%; padding:10px; font-size:1em; background:var(--color-warning); color:#451a03;">Bump to Backlog</button>
+    </div>
+</dialog>
+
+<dialog id="settingsModal" style="max-width:480px;">
+    <div class="dialog-header">
+        <h2 style="margin:0; color:var(--color-text); font-weight:800; font-size:1.25em;">Taxonomy Settings</h2>
+        <button class="secondary" id="settingsModalClose" style="height:fit-content; padding:4px 8px; font-size:0.8em;">X</button>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px; max-height:60vh; overflow-y:auto; padding-right:4px;">
+        <p style="font-size:0.85em; color:var(--color-text-muted); margin:0; line-height:1.5;">Customize the sub-tags used for categorizing work. These appear as micro-tags when you classify a case as Reactive or Strategic.</p>
+        <div class="taxonomy-group" id="taxonomyReactive">
+            <div class="taxonomy-group-header"><span>🔥 Reactive Sub-Tags</span></div>
+            <div id="taxonomyReactiveTags"></div>
+            <div class="taxonomy-add-row">
+                <input type="text" id="newReactiveTag" placeholder="New reactive tag..." style="flex:1; padding:6px 8px; font-size:0.85em;">
+                <button class="secondary" id="btnAddReactiveTag" style="padding:6px 10px;">+ Add</button>
+            </div>
+        </div>
+        <div class="taxonomy-group" id="taxonomyStrategic">
+            <div class="taxonomy-group-header"><span>🎯 Strategic Sub-Tags</span></div>
+            <div id="taxonomyStrategicTags"></div>
+            <div class="taxonomy-add-row">
+                <input type="text" id="newStrategicTag" placeholder="New strategic tag..." style="flex:1; padding:6px 8px; font-size:0.85em;">
+                <button class="secondary" id="btnAddStrategicTag" style="padding:6px 10px;">+ Add</button>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+<dialog id="feedbackModal" style="max-width:440px;">
+    <div class="dialog-header">
+        <h2 style="margin:0; color:var(--color-text); font-weight:800; font-size:1.25em;">💬 Send Feedback</h2>
+        <button class="secondary" id="feedbackModalClose" style="height:fit-content; padding:4px 8px; font-size:0.8em;">X</button>
+    </div>
+    <div id="feedbackForm" style="display:flex; flex-direction:column; gap:14px;">
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Feedback Type</label>
+            <select id="feedbackType" style="width:100%; margin-top:4px; padding:8px;">
+                <option value="bug">🐛 Bug Report</option>
+                <option value="feature">✨ Feature Request</option>
+                <option value="idea">💡 General Idea</option>
+            </select>
+        </div>
+        <div>
+            <label style="font-size:0.8em; font-weight:700; color:var(--color-text-muted); text-transform:uppercase;">Your Message</label>
+            <textarea id="feedbackMessage" placeholder="Tell us what's on your mind..." rows="4" style="width:100%; margin-top:4px; resize:vertical;"></textarea>
+        </div>
+        <button id="feedbackSubmitBtn" style="width:100%; padding:10px; font-size:1em;">Submit Feedback</button>
+    </div>
+    <div id="feedbackSuccess" class="feedback-success" style="display:none;">
+        ✅ Thank you for your feedback!
+    </div>
+</dialog>
+
+<!-- ========== SCRIPTS ========== -->
+<script src="crypto.js"></script>
+<script src="auth.js"></script>
+<script>
+(function() {
+    'use strict';
+
+    // ============================================================
+    // SECURITY UTILITIES
+    // ============================================================
+
+    /** HTML-escape a string for safe text content insertion */
+    function sanitize(str) {
+        if (!str) return '';
+        const el = document.createElement('span');
+        el.textContent = str;
+        return el.innerHTML;
+    }
+
+    /** Validate URL scheme — only allow safe protocols */
+    function isUrlSafe(url) {
+        if (!url) return false;
+        const trimmed = url.trim();
+        const ALLOWED_SCHEMES = ['https:', 'http:', 'mailto:'];
+        try {
+            const parsed = new URL(trimmed.startsWith('http') || trimmed.startsWith('mailto:') ? trimmed : 'https://' + trimmed);
+            return ALLOWED_SCHEMES.includes(parsed.protocol);
+        } catch {
+            return false;
+        }
+    }
+
+    /** Create a text node — safest way to insert user text into DOM */
+    function textNode(str) { return document.createTextNode(str || ''); }
+
+    /** Create an element with optional props and children */
+    function el(tag, attrs, ...children) {
+        const node = document.createElement(tag);
+        if (attrs) {
+            for (const [k, v] of Object.entries(attrs)) {
+                if (k === 'className') node.className = v;
+                else if (k === 'style' && typeof v === 'object') Object.assign(node.style, v);
+                else if (k.startsWith('on') && typeof v === 'function') node.addEventListener(k.slice(2).toLowerCase(), v);
+                else node.setAttribute(k, v);
+            }
+        }
+        for (const child of children) {
+            if (typeof child === 'string') node.appendChild(textNode(child));
+            else if (child) node.appendChild(child);
+        }
+        return node;
+    }
+
+    // ============================================================
+    // AUTH SCREEN WIRING
+    // ============================================================
+
+    const $ = (id) => document.getElementById(id);
+    const views = {
+        login: $('loginView'),
+        register: $('registerView'),
+        recoveryKey: $('recoveryKeyView'),
+        recovery: $('recoveryView'),
+        newRecoveryKey: $('newRecoveryKeyView'),
+    };
+
+    function showView(name) {
+        Object.values(views).forEach(v => v.classList.add('hidden'));
+        views[name].classList.remove('hidden');
+    }
+
+    function showError(elId, msg) {
+        const el = $(elId);
+        el.textContent = msg;
+        el.classList.add('visible');
+    }
+    function clearError(elId) {
+        const el = $(elId);
+        el.textContent = '';
+        el.classList.remove('visible');
+    }
+    function showProgress(elId) { $(elId).classList.add('visible'); }
+    function hideProgress(elId) { $(elId).classList.remove('visible'); }
+
+    // Navigation
+    $('showRegister').addEventListener('click', () => { clearError('loginError'); showView('register'); });
+    $('showLogin').addEventListener('click', () => { clearError('registerError'); showView('login'); });
+    $('showRecovery').addEventListener('click', () => { clearError('loginError'); showView('recovery'); });
+    $('backToLogin').addEventListener('click', () => { clearError('recoveryError'); showView('login'); });
+
+    // Password strength meter
+    $('registerPassword').addEventListener('input', (e) => {
+        const pw = e.target.value;
+        const fill = $('pwStrengthFill');
+        let score = 0;
+        if (pw.length >= 10) score++;
+        if (pw.length >= 14) score++;
+        if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+        if (/\d/.test(pw)) score++;
+        if (/[^A-Za-z0-9]/.test(pw)) score++;
+        const pct = Math.min(score / 5 * 100, 100);
+        fill.style.width = pct + '%';
+        fill.style.background = pct < 40 ? 'var(--color-danger)' : pct < 70 ? 'var(--color-warning)' : 'var(--color-success)';
+    });
+
+    // Register
+    $('registerBtn').addEventListener('click', async () => {
+        clearError('registerError');
+        const email = $('registerEmail').value.trim();
+        const pw = $('registerPassword').value;
+        const pwConfirm = $('registerPasswordConfirm').value;
+        const betaCode = $('registerCode').value.trim();
+
+        if (!email) { showError('registerError', 'Email is required.'); return; }
+        if (pw !== pwConfirm) { showError('registerError', 'Passwords do not match.'); return; }
+        if (pw.length < 10) { showError('registerError', 'Password must be at least 10 characters.'); return; }
+        if (!betaCode) { showError('registerError', 'A valid beta access code is required.'); return; }
+
+        $('registerBtn').disabled = true;
+        showProgress('registerProgress');
+
+        try {
+            const { recoveryKey } = await AuthManager.register(email, pw, betaCode);
+            hideProgress('registerProgress');
+            $('recoveryKeyDisplay').textContent = recoveryKey;
+            showView('recoveryKey');
+        } catch (err) {
+            hideProgress('registerProgress');
+            showError('registerError', err.message);
+        } finally {
+            $('registerBtn').disabled = false;
+        }
+    });
+
+    // Copy recovery key
+    $('copyRecoveryKey').addEventListener('click', () => {
+        navigator.clipboard.writeText($('recoveryKeyDisplay').textContent)
+            .then(() => { $('copyRecoveryKey').textContent = 'Copied!'; setTimeout(() => { $('copyRecoveryKey').textContent = 'Copy to Clipboard'; }, 2000); })
+            .catch(() => { /* fallback: user can manually select */ });
+    });
+
+    // Confirm recovery key → enter app
+    $('confirmRecoveryKey').addEventListener('click', async () => {
+        await enterApp();
+    });
+
+    // Login
+    $('loginBtn').addEventListener('click', async () => {
+        clearError('loginError');
+        const email = $('loginEmail').value.trim();
+        const pw = $('loginPassword').value;
+
+        if (!email || !pw) { showError('loginError', 'Email and password are required.'); return; }
+
+        $('loginBtn').disabled = true;
+        showProgress('loginProgress');
+
+        try {
+            await AuthManager.login(email, pw);
+            hideProgress('loginProgress');
+            await enterApp();
+        } catch (err) {
+            hideProgress('loginProgress');
+            showError('loginError', err.message);
+        } finally {
+            $('loginBtn').disabled = false;
+        }
+    });
+
+    // Allow enter key to submit login/register
+    $('loginPassword').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('loginBtn').click(); });
+    $('registerPasswordConfirm').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('registerBtn').click(); });
+
+    // Recovery
+    $('recoveryBtn').addEventListener('click', async () => {
+        clearError('recoveryError');
+        const email = $('recoveryEmail').value.trim();
+        const key = $('recoveryKeyInput').value.trim();
+        const pw = $('recoveryNewPassword').value;
+        const pwConfirm = $('recoveryNewPasswordConfirm').value;
+
+        if (!email || !key || !pw) { showError('recoveryError', 'All fields are required.'); return; }
+        if (pw !== pwConfirm) { showError('recoveryError', 'Passwords do not match.'); return; }
+        if (pw.length < 10) { showError('recoveryError', 'Password must be at least 10 characters.'); return; }
+
+        $('recoveryBtn').disabled = true;
+        showProgress('recoveryProgress');
+
+        try {
+            const { newRecoveryKey } = await AuthManager.recoverWithKey(email, key, pw);
+            hideProgress('recoveryProgress');
+            $('newRecoveryKeyDisplay').textContent = newRecoveryKey;
+            showView('newRecoveryKey');
+        } catch (err) {
+            hideProgress('recoveryProgress');
+            showError('recoveryError', err.message);
+        } finally {
+            $('recoveryBtn').disabled = false;
+        }
+    });
+
+    $('copyNewRecoveryKey').addEventListener('click', () => {
+        navigator.clipboard.writeText($('newRecoveryKeyDisplay').textContent)
+            .then(() => { $('copyNewRecoveryKey').textContent = 'Copied!'; setTimeout(() => { $('copyNewRecoveryKey').textContent = 'Copy to Clipboard'; }, 2000); })
+            .catch(() => {});
+    });
+
+    $('confirmNewRecoveryKey').addEventListener('click', async () => {
+        await enterApp();
+    });
+
+    // Pomo outcome toggle
+    $('pomoOutcome').addEventListener('change', (e) => {
+        $('failReasonContainer').style.display = e.target.value === 'Fail' ? 'block' : 'none';
+    });
+
+    // ============================================================
+    // APP STATE & VAULT INTEGRATION
+    // ============================================================
+
+    let appState = null;
+    let vaultVersion = 0;
+    let saveDebounceTimer = null;
+
+    // Convenience accessors
+    function S() { return appState; }
+
+    /** Debounced save to vault — with retry for network resilience */
+    let saveRetryCount = 0;
+    const MAX_SAVE_RETRIES = 2;
+
+    function persistState() {
+        // GEMINI_LOGIC (Epic 13): Recalculate maturity on every mutation
+        calculateMaturity();
+        if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+        saveDebounceTimer = setTimeout(async () => {
+            if (!AuthManager.isLoggedIn() || !appState) return;
+            try {
+                const result = await AuthManager.saveVault(appState);
+                vaultVersion = result.version;
+                saveRetryCount = 0;
+                debugLog('Vault synced, version: ' + vaultVersion);
+            } catch (err) {
+                debugLog('ERROR saving vault: ' + err.message);
+                console.error('Vault save error:', err);
+                // Retry on transient network failures
+                if (saveRetryCount < MAX_SAVE_RETRIES && !err.message.includes('CONFLICT')) {
+                    saveRetryCount++;
+                    debugLog(`Retrying save (attempt ${saveRetryCount})...`);
+                    setTimeout(() => persistState(), 2000 * saveRetryCount);
+                }
+            }
+        }, 1500); // Longer debounce for production network calls
+    }
+
+    async function enterApp() {
+        try {
+            const result = await AuthManager.loadVault();
+            appState = result.data;
+            vaultVersion = result.version;
+
+            // Schema migration hook
+            if (!appState.schemaVersion) appState.schemaVersion = 1;
+
+            $('authScreen').classList.add('hidden');
+            $('appScreen').classList.remove('hidden');
+            const session = AuthManager.getSession();
+            $('userEmailDisplay').textContent = session.email;
+            initApp();
+        } catch (err) {
+            console.error('Failed to enter app:', err);
+            alert('Failed to load vault: ' + err.message);
+        }
+    }
+
+    function exitApp() {
+        AuthManager.logout();
+        appState = null;
+        $('appScreen').classList.add('hidden');
+        $('authScreen').classList.remove('hidden');
+        showView('login');
+        // Clear sensitive fields
+        $('loginPassword').value = '';
+        $('registerPassword').value = '';
+        $('registerPasswordConfirm').value = '';
+    }
+
+    // ============================================================
+    // DEBUG ENGINE
+    // ============================================================
+
+    let isDebugMode = false;
+    let debugLogs = [];
+    function debugLog(msg) {
+        const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+        const logMsg = `[${timestamp}] ${msg}`;
+        debugLogs.push(logMsg);
+        if (isDebugMode) console.log(logMsg);
+    }
+
+    // ============================================================
+    // EMOJI PICKER (safe — no inline onclick)
+    // ============================================================
+
+    const TECH_EMOJIS = ['🌐','💻','🖥️','📱','🔌','🔋','⚙️','🛠️','🔧','🐛','🐞','🚨','🚑','📞','🎧','🎫','🎟️','📄','📁','📂','📊','📈','🔒','🔓','🔑','⚠️','✅','❌','🔥','🚀','🧠','⚡','💡','📌','📋','☁️','🗑️','💬','📧','📅','🤖','🛡️','🎯','⭐','👍'];
+
+    function populateEmojiGrid(gridId, targetInputId) {
+        const grid = $(gridId);
+        if (!grid) return;
+        grid.innerHTML = '';
+        TECH_EMOJIS.forEach(emoji => {
+            const btn = el('div', { className: 'emoji-btn' }, emoji);
+            btn.addEventListener('click', () => { $(targetInputId).value = emoji; });
+            grid.appendChild(btn);
+        });
+    }
+
+    // ============================================================
+    // UTILITIES
+    // ============================================================
+
+    /** Get the primary URL from a link item (new resources[] or legacy url) */
+    function getPrimaryUrl(link) {
+        if (link.resources && link.resources.length > 0) return link.resources[0].url;
+        if (link.url) return link.url;
+        return null;
+    }
+
+    function renderLinkIcon(link) {
+        const container = document.createDocumentFragment();
+        if (link.customIcon && link.customIcon.trim() !== '') {
+            const iconStr = link.customIcon.trim();
+            if (/^https?:\/\//.test(iconStr) || iconStr.startsWith('data:')) {
+                const img = el('img', { style: { width: '100%', height: '100%', borderRadius: '4px', objectFit: 'contain' } });
+                img.src = iconStr;
+                img.addEventListener('error', function() { this.parentElement.textContent = '📋'; });
+                container.appendChild(img);
+            } else {
+                const span = el('span', { style: { fontSize: '16px', lineHeight: '1', display: 'flex', alignItems: 'center', justifyContent: 'center' } }, iconStr);
+                container.appendChild(span);
+            }
+        } else {
+            const primaryUrl = getPrimaryUrl(link);
+            if (primaryUrl) {
+                try {
+                    const urlStr = primaryUrl.startsWith('http') ? primaryUrl : 'https://' + primaryUrl;
+                    const urlObj = new URL(urlStr);
+                    const img = el('img', { style: { width: '100%', height: '100%', borderRadius: '4px', objectFit: 'contain' } });
+                    img.src = `https://www.google.com/s2/favicons?domain=${urlObj.hostname}&sz=64`;
+                    img.addEventListener('error', function() { this.parentElement.textContent = '📋'; });
+                    container.appendChild(img);
+                } catch {
+                    container.appendChild(textNode('📋'));
+                }
+            } else {
+                container.appendChild(textNode(link.isActionable ? '🎯' : '📋'));
+            }
+        }
+        return container;
+    }
+
+    function extractYTInfo(url) {
+        let videoId = null, listId = null;
+        const vMatch = url.match(/(?:v=|youtu\.be\/|embed\/)([^&?]+)/);
+        if (vMatch) videoId = vMatch[1];
+        const lMatch = url.match(/[?&]list=([^&?]+)/);
+        if (lMatch) listId = lMatch[1];
+        return { videoId, listId };
+    }
+
+    function getYtSrc(autoplay) {
+        const links = S().ytLinks || [];
+        const idx = S().currentYtIndex || 0;
+        const link = links[idx];
+        if (!link) return '';
+        const origin = window.location.protocol === 'file:' ? 'http://localhost' : window.location.origin;
+        let src = 'https://www.youtube.com/embed/';
+        if (link.videoId) { src += link.videoId + '?'; if (link.listId) src += 'list=' + link.listId + '&'; }
+        else if (link.listId) src += 'videoseries?list=' + link.listId + '&';
+        src += `autoplay=${autoplay ? 1 : 0}&mute=0&origin=${encodeURIComponent(origin)}`;
+        return src;
+    }
+
+    // ============================================================
+    // TIMER / AUDIO STATE (transient — not persisted in vault)
+    // ============================================================
+
+    let currentFocusTask = '';
+    let currentFocusDetails = '';
+    let selectedFocusTaskId = null;
+    let showArchive = false;
+    // GEMINI_LOGIC (Epic 14): Global UI state for dual-view architecture
+    let currentView = 'workspace'; // 'workspace' or 'library'
+    let pomoTimeLeft = 25 * 60;
+    let pomoTotalTime = 25 * 60;
+    let pomoTimerId = null;
+    let isPomoRunning = false;
+    let costSeconds = 0;
+    let costTimerId = null;
+    let isCostRunning = false;
+    let currentAudioMode = 'ambient';
+    let autoPlayAudio = false;
+    let audioCtx, noiseSrc, noiseGain;
+    let isNoisePlaying = false;
+    let isYtPlaying = false;
+
+    // ============================================================
+    // MATURITY METER (Epic 3)
+    // ============================================================
+
+    // GEMINI_LOGIC: Maturity Meter recalculates on every state mutation.
+    // Excludes completed items — meter reflects pending workload only.
+    function calculateMaturity() {
+        if (!appState) return;
+        const links = S().links || [];
+        let totalMins = 0, strategicMins = 0;
+        links.forEach(l => {
+            if (!l || !l.isActionable || !l.estMinutes) return;
+            if (l.isCompleted) return; // Epic 13: exclude completed
+            const mins = parseInt(l.estMinutes) || 0;
+            totalMins += mins;
+            if (l.workType === 'strategic') strategicMins += mins;
+        });
+        const pct = totalMins > 0 ? Math.round((strategicMins / totalMins) * 100) : 0;
+
+        let color, label, emoji;
+        if (pct <= 30) { color = 'var(--color-danger)'; label = 'The Firefighter'; emoji = '🚒'; }
+        else if (pct <= 60) { color = 'var(--color-warning)'; label = 'The Manager'; emoji = '📋'; }
+        else { color = 'var(--color-success)'; label = 'The Architect'; emoji = '🏛️'; }
+
+        const bar = $('strategyBar');
+        const statusLabel = $('maturityStatusLabel');
+        const emojiEl = $('maturityEmoji');
+        if (bar) { bar.style.width = pct + '%'; bar.style.background = color; }
+        if (statusLabel) statusLabel.textContent = `${label} (${pct}%)`;
+        if (emojiEl) emojiEl.textContent = emoji;
+    }
+
+    // ============================================================
+    // SIDEBAR WIDGET ORDER CONFIG
+    // ============================================================
+
+    const WIDGET_NAMES = {
+        'focus_review': '⏱️ Focus & Review',
+        'audio': '🎧 Focus Audio',
+        'notes': '📝 Quick Notes',
+        'clocks': '🌍 Time Zones',
+        'cost': '💸 Meeting Cost'
+    };
+
+    let draggedOrderIndex = null;
+
+    function renderToolOrderList() {
+        const container = $('sidebarOrderList');
+        if (!container) return;
+        container.innerHTML = '';
+        S().sidebarOrder.forEach((id, index) => {
+            const div = el('div', { className: 'order-item', draggable: 'true' });
+            div.dataset.index = index;
+            div.appendChild(el('span', { className: 'drag-icon' }, '⠿'));
+            div.appendChild(el('span', {}, WIDGET_NAMES[id] || id));
+            div.addEventListener('dragstart', function(e) {
+                e.stopPropagation();
+                draggedOrderIndex = parseInt(this.dataset.index);
+                e.dataTransfer.effectAllowed = 'move';
+                this.style.opacity = '0.5';
+            });
+            div.addEventListener('dragend', function() { this.style.opacity = '1'; });
+            div.addEventListener('dragover', function(e) { e.preventDefault(); this.classList.add('drag-over'); });
+            div.addEventListener('dragleave', function() { this.classList.remove('drag-over'); });
+            div.addEventListener('drop', function(e) {
+                e.preventDefault(); e.stopPropagation();
+                this.classList.remove('drag-over');
+                if (draggedOrderIndex === null) return;
+                const targetIdx = parseInt(this.dataset.index);
+                if (draggedOrderIndex !== targetIdx) {
+                    const item = S().sidebarOrder[draggedOrderIndex];
+                    S().sidebarOrder.splice(draggedOrderIndex, 1);
+                    S().sidebarOrder.splice(targetIdx, 0, item);
+                    persistState();
+                    renderToolOrderList();
+                    renderSidebar();
+                }
+                draggedOrderIndex = null;
+            });
+            container.appendChild(div);
+        });
+    }
+
+    function moveWidget(id, dir) {
+        const arr = S().sidebarOrder;
+        const idx = arr.indexOf(id);
+        const swapIdx = idx + dir;
+        if (swapIdx < 0 || swapIdx >= arr.length) return;
+        [arr[idx], arr[swapIdx]] = [arr[swapIdx], arr[idx]];
+        persistState();
+        renderSidebar();
+        if ($('configDropdown').classList.contains('show')) renderToolOrderList();
+    }
+
+    // ============================================================
+    // SIDEBAR RENDER
+    // ============================================================
+
+    function renderSidebar() {
+        const sidebar = $('sidebarContainer');
+        sidebar.innerHTML = '';
+        // Epic 14: In library view, hide productivity-only widgets
+        const hiddenInLibrary = ['focus_review', 'cost'];
+        S().sidebarOrder.forEach(widgetId => {
+            if (currentView === 'library' && hiddenInLibrary.includes(widgetId)) return;
+            const div = el('div', { className: 'widget' });
+            div.dataset.id = widgetId;
+            buildWidget(div, widgetId);
+            sidebar.appendChild(div);
+        });
+        renderNotes();
+        renderClocks();
+        updatePomoDisplay();
+        updateCostDisplay();
+    }
+
+    function buildWidget(container, widgetId) {
+        // Header
+        const header = el('div', { className: 'widget-header' });
+        header.appendChild(el('h3', {}, WIDGET_NAMES[widgetId] || widgetId));
+        const arrows = el('div', { className: 'widget-arrows' });
+        const upBtn = el('button', { className: 'arrow-btn', title: 'Move Up' }, '▲');
+        upBtn.addEventListener('click', () => moveWidget(widgetId, -1));
+        const downBtn = el('button', { className: 'arrow-btn', title: 'Move Down' }, '▼');
+        downBtn.addEventListener('click', () => moveWidget(widgetId, 1));
+        arrows.appendChild(upBtn);
+        arrows.appendChild(downBtn);
+        header.appendChild(arrows);
+        container.appendChild(header);
+
+        // Content — using innerHTML for complex widget templates is acceptable here
+        // because all user data is inserted via sanitize() and no onclick attributes are used
+        if (widgetId === 'focus_review') buildFocusWidget(container);
+        else if (widgetId === 'audio') buildAudioWidget(container);
+        else if (widgetId === 'notes') buildNotesWidget(container);
+        else if (widgetId === 'clocks') buildClocksWidget(container);
+        else if (widgetId === 'cost') buildCostWidget(container);
+    }
+
+    function buildFocusWidget(container) {
+        const today = new Date().toLocaleDateString();
+        const todaysLogs = (S().pomoLogs || []).filter(l => l && l.date === today);
+        const successes = todaysLogs.filter(l => l.outcome === 'Success').length;
+        const rate = todaysLogs.length ? Math.round((successes / todaysLogs.length) * 100) : 0;
+        let color = 'var(--color-primary)', emoji = '🎯';
+        if (todaysLogs.length > 0) {
+            if (rate >= 80) { color = 'var(--color-success)'; emoji = rate === 100 ? '🏆' : '🔥'; }
+            else if (rate >= 50) { color = 'var(--color-warning)'; emoji = '👍'; }
+            else { color = 'var(--color-danger)'; emoji = '🚧'; }
+        }
+
+        // Task select dropdown — includes tasks and their subtasks (Epic 11)
+        const taskRow = el('div', { style: { display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '15px' } });
+        const taskSelect = el('select', { id: 'focusTaskSelect', style: { width: '100%', padding: '8px' } });
+        taskSelect.appendChild(el('option', { value: '' }, '— Select a case to focus on —'));
+        (S().links || []).forEach(link => {
+            if (!link || link.isCompleted) return;
+            if (!link.isActionable) return;
+            const prefix = link.workType === 'strategic' ? '🎯' : '🔥';
+            const keyTag = link.caseKey ? `[${link.caseKey}] ` : '';
+            const opt = el('option', { value: link.id }, `${prefix} ${keyTag}${link.name}`);
+            if (link.id === selectedFocusTaskId) opt.selected = true;
+            taskSelect.appendChild(opt);
+            // Epic 11: Include incomplete subtasks
+            (link.subtasks || []).forEach(st => {
+                if (st.isCompleted) return;
+                const stOpt = el('option', { value: `${link.id}|${st.id}` }, `    ↳ ${st.title}${st.estMinutes ? ` (${st.estMinutes}m)` : ''}`);
+                if (selectedFocusTaskId === `${link.id}|${st.id}`) stOpt.selected = true;
+                taskSelect.appendChild(stOpt);
+            });
+        });
+        taskSelect.addEventListener('change', (e) => {
+            selectedFocusTaskId = e.target.value || null;
+            const link = S().links.find(l => l && l.id === selectedFocusTaskId);
+            currentFocusTask = link ? link.name : '';
+        });
+        if (isPomoRunning) taskSelect.disabled = true;
+        taskRow.appendChild(taskSelect);
+
+        const detailInput = el('input', { type: 'text', id: 'focusTaskDetails', placeholder: 'Short details or context...', value: currentFocusDetails });
+        detailInput.addEventListener('input', (e) => { currentFocusDetails = e.target.value; });
+        if (isPomoRunning) detailInput.disabled = true;
+        taskRow.appendChild(detailInput);
+        container.appendChild(taskRow);
+
+        // Timer display
+        container.appendChild(el('div', { className: 'pomo-display', id: 'pomoDisplay' }, '25:00'));
+
+        // Controls
+        const controls = el('div', { className: 'pomo-controls' });
+        const minsInput = el('input', { type: 'number', id: 'pomoMins', value: String(Math.floor(pomoTotalTime / 60)), min: '1', max: '120' });
+        if (isPomoRunning) minsInput.disabled = true;
+        minsInput.addEventListener('input', () => {
+            if (!isPomoRunning) {
+                let val = parseInt(minsInput.value);
+                if (isNaN(val) || val < 1) val = 0;
+                pomoTimeLeft = val * 60;
+                pomoTotalTime = pomoTimeLeft;
+                updatePomoDisplay();
+            }
+        });
+        controls.appendChild(minsInput);
+
+        const startBtn = el('button', { id: 'pomoBtn', style: { backgroundColor: isPomoRunning ? 'var(--color-danger)' : 'var(--color-primary)', width: '110px' } }, isPomoRunning ? 'Stop / Log' : 'Start');
+        startBtn.addEventListener('click', togglePomo);
+        controls.appendChild(startBtn);
+
+        const resetBtn = el('button', { id: 'pomoResetBtn', className: 'secondary' }, 'Reset');
+        if (isPomoRunning) resetBtn.disabled = true;
+        resetBtn.addEventListener('click', resetPomo);
+        controls.appendChild(resetBtn);
+        container.appendChild(controls);
+
+        // Daily review section (safe innerHTML — only sanitized data)
+        const reviewDiv = document.createElement('div');
+        reviewDiv.style.cssText = 'margin-top:25px; padding-top:20px; border-top:1px dashed var(--color-border);';
+        reviewDiv.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;">
+                <div style="font-weight:700; color:var(--color-text); font-size:0.95em;">Daily Review</div>
+                <div style="font-weight:800; color:${color}; font-size:1.1em;">${emoji} ${rate}%</div>
+            </div>
+            <div style="font-size:0.8em; color:var(--color-text-muted); margin-bottom:8px;">${successes} of ${todaysLogs.length} sessions successful</div>
+            <div style="width:100%; background:var(--bg-home); border-radius:4px; height:8px; margin:10px 0; overflow:hidden; box-shadow:inset 0 1px 2px rgba(0,0,0,0.1);">
+                <div style="width:${rate}%; background:${color}; height:100%; transition:width 0.5s;"></div>
+            </div>
+        `;
+
+        const details = document.createElement('details');
+        const summary = el('summary', { style: { cursor: 'pointer', fontWeight: '600', color: 'var(--color-text-muted)', marginTop: '15px', fontSize: '0.85em', outline: 'none' } }, "View Today's Log History");
+        details.appendChild(summary);
+
+        const logList = el('ul', { style: { listStyle: 'none', padding: '0', margin: '10px 0 0 0', maxHeight: '180px', overflowY: 'auto', fontSize: '0.85em', display: 'flex', flexDirection: 'column', gap: '8px', paddingRight: '5px' } });
+        if (todaysLogs.length === 0) {
+            logList.appendChild(el('li', { style: { color: 'var(--color-text-muted)' } }, 'No sessions logged today.'));
+        } else {
+            todaysLogs.slice().reverse().forEach(log => {
+                const li = el('li', { style: { background: 'var(--bg-home)', padding: '10px', borderRadius: 'var(--radius-md)', borderLeft: `4px solid ${log.outcome === 'Success' ? 'var(--color-success)' : 'var(--color-danger)'}`, lineHeight: '1.4' } });
+                li.appendChild(el('div', { style: { fontWeight: '700', wordBreak: 'break-word', color: 'var(--color-text)', marginBottom: '4px' } }, `${log.outcome === 'Success' ? '✅' : '❌'} ${log.task}`));
+                li.appendChild(el('div', { style: { color: 'var(--color-text-muted)', fontSize: '0.9em' } }, `${log.minutes}m • ${log.reason}`));
+                logList.appendChild(li);
+            });
+        }
+        details.appendChild(logList);
+        reviewDiv.appendChild(details);
+        container.appendChild(reviewDiv);
+    }
+
+    function buildAudioWidget(container) {
+        const segControl = el('div', { className: 'segmented-control' });
+        const ambientBtn = el('button', { id: 'btnModeAmbient', className: `seg-btn ${currentAudioMode === 'ambient' ? 'active' : 'inactive'}` }, 'Ambient');
+        ambientBtn.addEventListener('click', () => setAudioMode('ambient'));
+        const ytBtn = el('button', { id: 'btnModeYoutube', className: `seg-btn ${currentAudioMode === 'youtube' ? 'active' : 'inactive'}` }, 'YouTube');
+        ytBtn.addEventListener('click', () => setAudioMode('youtube'));
+        segControl.appendChild(ambientBtn);
+        segControl.appendChild(ytBtn);
+        container.appendChild(segControl);
+
+        // Ambient controls
+        const ambientDiv = el('div', { id: 'ambientControls', style: { display: currentAudioMode === 'ambient' ? 'block' : 'none' } });
+        const noiseSelect = el('select', { id: 'noiseType', style: { width: '100%', marginBottom: '12px' } });
+        [['brown', 'Brown Noise (Deep Focus)'], ['pink', 'Pink Noise (Rainfall)'], ['white', 'White Noise (Static)']].forEach(([v, t]) => {
+            noiseSelect.appendChild(el('option', { value: v }, t));
+        });
+        ambientDiv.appendChild(noiseSelect);
+        const volRow = el('div', { className: 'tool-row' });
+        volRow.appendChild(el('input', { type: 'range', id: 'noiseVol', min: '0.01', max: '0.5', step: '0.01', value: '0.1', style: { flex: '1', cursor: 'pointer' } }));
+        const noiseBtn = el('button', { id: 'noiseBtn', style: { backgroundColor: isNoisePlaying ? 'var(--color-danger)' : 'var(--color-primary)', width: '80px' } }, isNoisePlaying ? 'Stop' : 'Play');
+        noiseBtn.addEventListener('click', toggleNoise);
+        volRow.appendChild(noiseBtn);
+        $('noiseVol')?.removeEventListener('input', updateVolumeHandler); // cleanup
+        ambientDiv.appendChild(volRow);
+        container.appendChild(ambientDiv);
+
+        // YouTube controls
+        const ytDiv = el('div', { id: 'youtubeControls', style: { display: currentAudioMode === 'youtube' ? 'block' : 'none' } });
+        const ytRow = el('div', { style: { display: 'flex', gap: '8px', marginBottom: '12px' } });
+        const ytSelect = el('select', { id: 'ytTrackSelect', style: { flex: '1' } });
+        (S().ytLinks || []).forEach((link, idx) => {
+            const opt = el('option', { value: String(idx) }, link.title);
+            if (idx === (S().currentYtIndex || 0)) opt.selected = true;
+            ytSelect.appendChild(opt);
+        });
+        ytSelect.addEventListener('change', (e) => { changeYtTrack(parseInt(e.target.value)); });
+        ytRow.appendChild(ytSelect);
+        const addYtBtn = el('button', { className: 'secondary', style: { padding: '6px 12px' } }, '+ Add');
+        addYtBtn.addEventListener('click', addYtLink);
+        ytRow.appendChild(addYtBtn);
+        ytDiv.appendChild(ytRow);
+
+        const ytContainer = el('div', { id: 'ytPlayerContainer', style: { width: '100%', height: '160px', background: 'black', borderRadius: 'var(--radius-md)', overflow: 'hidden' } });
+        const iframe = el('iframe', { id: 'ytIframe', width: '100%', height: '160', frameborder: '0', allow: 'autoplay; clipboard-write; encrypted-media; picture-in-picture', allowfullscreen: '', sandbox: 'allow-scripts allow-same-origin allow-popups' });
+        iframe.src = getYtSrc(isYtPlaying);
+        ytContainer.appendChild(iframe);
+        ytDiv.appendChild(ytContainer);
+        container.appendChild(ytDiv);
+
+        // Auto-play checkbox
+        const autoRow = el('div', { style: { marginTop: '16px', fontSize: '0.85em', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-dark)', fontWeight: '500' } });
+        const autoCheck = el('input', { type: 'checkbox', id: 'autoPlayAudio', style: { width: 'auto', margin: '0', cursor: 'pointer', accentColor: 'var(--color-primary)' } });
+        if (autoPlayAudio) autoCheck.checked = true;
+        autoCheck.addEventListener('change', (e) => { autoPlayAudio = e.target.checked; });
+        autoRow.appendChild(autoCheck);
+        autoRow.appendChild(el('label', { for: 'autoPlayAudio', style: { cursor: 'pointer' } }, 'Auto-play with Focus Tool'));
+        container.appendChild(autoRow);
+    }
+
+    function buildNotesWidget(container) {
+        const textarea = el('textarea', { id: 'quickNoteText', className: 'note-input', rows: '2', placeholder: 'Jot down a quick thought...' });
+        container.appendChild(textarea);
+        const saveBtn = el('button', { style: { width: '100%', marginTop: '6px' } }, 'Save Note');
+        saveBtn.addEventListener('click', saveNote);
+        container.appendChild(saveBtn);
+        container.appendChild(el('ul', { className: 'notes-list', id: 'notesDisplay' }));
+    }
+
+    function buildClocksWidget(container) {
+        const row = el('div', { className: 'tool-row', style: { marginBottom: '12px' } });
+        const tzSelect = el('select', { id: 'timezoneSelect', style: { flex: '1' } });
+        [['America/Vancouver','Pacific Time (PT)'],['America/Denver','Mountain Time (MT)'],['America/Chicago','Central Time (CT)'],['America/New_York','Eastern Time (ET)'],['Europe/London','London (GMT/BST)'],['Europe/Paris','Central Europe (CET)'],['Asia/Tokyo','Tokyo (JST)'],['Australia/Sydney','Sydney (AEST)'],['UTC','UTC']].forEach(([v,t]) => {
+            tzSelect.appendChild(el('option', { value: v }, t));
+        });
+        row.appendChild(tzSelect);
+        const addBtn = el('button', { className: 'secondary', style: { padding: '6px 12px' } }, '+ Add');
+        addBtn.addEventListener('click', addClock);
+        row.appendChild(addBtn);
+        container.appendChild(row);
+        container.appendChild(el('div', { className: 'clocks-container', id: 'clocksDisplay' }));
+    }
+
+    function buildCostWidget(container) {
+        container.appendChild(el('div', { className: 'cost-display', id: 'costDisplay' }, '$0.00'));
+        const rateRow = el('div', { className: 'tool-row' });
+        rateRow.appendChild(el('label', { style: { fontWeight: '500' } }, 'Avg Rate/hr ($)'));
+        const rateInput = el('input', { type: 'number', id: 'costRate', value: '100' });
+        if (isCostRunning) rateInput.disabled = true;
+        rateRow.appendChild(rateInput);
+        container.appendChild(rateRow);
+
+        const attRow = el('div', { className: 'tool-row' });
+        attRow.appendChild(el('label', { style: { fontWeight: '500' } }, 'Attendees'));
+        const attInput = el('input', { type: 'number', id: 'costAttendees', value: '4' });
+        if (isCostRunning) attInput.disabled = true;
+        attRow.appendChild(attInput);
+        container.appendChild(attRow);
+
+        const btnRow = el('div', { style: { display: 'flex', gap: '10px', marginTop: '15px' } });
+        const costBtn = el('button', { id: 'costBtn', style: { flex: '1', backgroundColor: isCostRunning ? 'var(--color-danger)' : 'var(--color-success)' } }, isCostRunning ? 'Pause' : 'Start');
+        costBtn.addEventListener('click', toggleCost);
+        btnRow.appendChild(costBtn);
+        const resetCostBtn = el('button', { className: 'secondary' }, 'Reset');
+        resetCostBtn.addEventListener('click', resetCost);
+        btnRow.appendChild(resetCostBtn);
+        container.appendChild(btnRow);
+    }
+
+    // ============================================================
+    // AUDIO LOGIC
+    // ============================================================
+
+    function setAudioMode(mode) {
+        currentAudioMode = mode;
+        const ac = $('ambientControls'), yc = $('youtubeControls');
+        if (ac) ac.style.display = mode === 'ambient' ? 'block' : 'none';
+        if (yc) yc.style.display = mode === 'youtube' ? 'block' : 'none';
+        const ab = $('btnModeAmbient'), yb = $('btnModeYoutube');
+        if (ab) ab.className = mode === 'ambient' ? 'seg-btn active' : 'seg-btn inactive';
+        if (yb) yb.className = mode === 'youtube' ? 'seg-btn active' : 'seg-btn inactive';
+    }
+
+    function addYtLink() {
+        // TODO Phase 3: Replace with proper modal
+        const url = prompt('Paste YouTube URL:');
+        if (url) {
+            const { videoId, listId } = extractYTInfo(url);
+            if (videoId || listId) {
+                const title = prompt('Name this stream/playlist:', 'New Audio') || 'Audio';
+                S().ytLinks.push({ title, videoId, listId });
+                S().currentYtIndex = S().ytLinks.length - 1;
+                persistState();
+                renderSidebar();
+            } else { alert('Invalid YouTube URL.'); }
+        }
+    }
+
+    function changeYtTrack(idx) {
+        S().currentYtIndex = idx;
+        persistState();
+        const iframe = $('ytIframe');
+        if (iframe) iframe.src = getYtSrc(isYtPlaying);
+    }
+
+    function updateVolumeHandler(e) { if (noiseGain) noiseGain.gain.value = parseFloat(e.target.value); }
+
+    function toggleNoise() {
+        const btn = $('noiseBtn');
+        if (isNoisePlaying) {
+            if (noiseSrc) noiseSrc.stop();
+            if (audioCtx) audioCtx.suspend();
+            isNoisePlaying = false;
+            if (btn) { btn.textContent = 'Play'; btn.style.backgroundColor = 'var(--color-primary)'; }
+        } else {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const bufferSize = audioCtx.sampleRate * 2;
+            const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+            const output = buffer.getChannelData(0);
+            const type = $('noiseType')?.value || 'brown';
+            if (type === 'white') { for (let i = 0; i < bufferSize; i++) output[i] = Math.random() * 2 - 1; }
+            else if (type === 'brown') { let last = 0; for (let i = 0; i < bufferSize; i++) { const w = Math.random() * 2 - 1; output[i] = (last + 0.02 * w) / 1.02; last = output[i]; output[i] *= 3.5; } }
+            else { let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0; for (let i = 0; i < bufferSize; i++) { const w = Math.random() * 2 - 1; b0=0.99886*b0+w*0.0555179;b1=0.99332*b1+w*0.0750759;b2=0.969*b2+w*0.153852;b3=0.8665*b3+w*0.3104856;b4=0.55*b4+w*0.5329522;b5=-0.7616*b5-w*0.016898;output[i]=b0+b1+b2+b3+b4+b5+b6+w*0.5362;output[i]*=0.11;b6=w*0.115926; } }
+            noiseSrc = audioCtx.createBufferSource();
+            noiseSrc.buffer = buffer;
+            noiseSrc.loop = true;
+            if (!noiseGain) { noiseGain = audioCtx.createGain(); noiseGain.connect(audioCtx.destination); }
+            noiseGain.gain.value = $('noiseVol') ? parseFloat($('noiseVol').value) : 0.1;
+            noiseSrc.connect(noiseGain);
+            noiseSrc.start(0);
+            isNoisePlaying = true;
+            if (btn) { btn.textContent = 'Stop'; btn.style.backgroundColor = 'var(--color-danger)'; }
+        }
+    }
+
+    // ============================================================
+    // FOCUS TIMER
+    // ============================================================
+
+    function togglePomo() {
+        if (isPomoRunning) { stopPomo(); }
+        else {
+            const display = $('pomoDisplay');
+            if (display && display.textContent === '00:00' || pomoTimeLeft === 0) {
+                const minsInput = $('pomoMins');
+                let val = parseInt(minsInput?.value);
+                if (isNaN(val) || val < 1) val = 25;
+                pomoTimeLeft = val * 60;
+                pomoTotalTime = pomoTimeLeft;
+            }
+            isPomoRunning = true;
+            const minsInput = $('pomoMins');
+            const taskSelect = $('focusTaskSelect');
+            const detailInput = $('focusTaskDetails');
+            if (minsInput) minsInput.disabled = true;
+            if (taskSelect) taskSelect.disabled = true;
+            if (detailInput) detailInput.disabled = true;
+            const btn = $('pomoBtn');
+            if (btn) { btn.textContent = 'Stop/Log'; btn.style.backgroundColor = 'var(--color-danger)'; }
+            const resetBtn = $('pomoResetBtn');
+            if (resetBtn) resetBtn.disabled = true;
+
+            if (autoPlayAudio) {
+                if (currentAudioMode === 'ambient' && !isNoisePlaying) toggleNoise();
+                else if (currentAudioMode === 'youtube' && !isYtPlaying) {
+                    isYtPlaying = true;
+                    const iframe = $('ytIframe');
+                    if (iframe) iframe.src = getYtSrc(true);
+                }
+            }
+            pomoTimerId = setInterval(() => {
+                pomoTimeLeft--;
+                updatePomoDisplay();
+                if (pomoTimeLeft <= 0) stopPomo();
+            }, 1000);
+        }
+    }
+
+    function stopPomo() {
+        clearInterval(pomoTimerId);
+        isPomoRunning = false;
+        const minsInput = $('pomoMins');
+        const taskSelect = $('focusTaskSelect');
+        const detailInput = $('focusTaskDetails');
+        const resetBtn = $('pomoResetBtn');
+        if (minsInput) minsInput.disabled = false;
+        if (taskSelect) taskSelect.disabled = false;
+        if (detailInput) detailInput.disabled = false;
+        if (resetBtn) resetBtn.disabled = false;
+        const btn = $('pomoBtn');
+        if (btn) { btn.textContent = 'Start'; btn.style.backgroundColor = 'var(--color-primary)'; }
+
+        if (autoPlayAudio) {
+            if (currentAudioMode === 'ambient' && isNoisePlaying) toggleNoise();
+            else if (currentAudioMode === 'youtube' && isYtPlaying) {
+                isYtPlaying = false;
+                const iframe = $('ytIframe');
+                if (iframe) iframe.src = getYtSrc(false);
+            }
+        }
+
+        const secondsLogged = pomoTotalTime - (pomoTimeLeft > 0 ? pomoTimeLeft : 0);
+        const minsLogged = Math.floor(secondsLogged / 60);
+
+        // Resolve task label — handle taskId|subtaskId format (Epic 11)
+        let taskLabel = currentFocusTask || 'Untitled Task';
+        if (selectedFocusTaskId) {
+            const parts = selectedFocusTaskId.split('|');
+            const parentLink = S().links.find(l => l && l.id === parts[0]);
+            if (parentLink) {
+                if (parts.length > 1) {
+                    const sub = (parentLink.subtasks || []).find(s => s.id === parts[1]);
+                    taskLabel = sub ? `${parentLink.name} → ${sub.title}` : parentLink.name;
+                } else {
+                    taskLabel = parentLink.name;
+                }
+            }
+        }
+        const taskDetails = $('focusTaskDetails')?.value;
+        const displayTask = taskDetails ? `${taskLabel} - ${taskDetails}` : taskLabel;
+
+        $('pomoStats').textContent = `Time Logged: ${minsLogged}m / ${Math.floor(pomoTotalTime / 60)}m`;
+        $('pomoModalTask').value = displayTask;
+        $('pomoOutcome').value = 'Success';
+        $('failReasonContainer').style.display = 'none';
+        $('pomoNotes').value = '';
+        $('pomoMarkComplete').checked = false;
+        $('pomoModal').showModal();
+
+        pomoTimeLeft = pomoTotalTime;
+        updatePomoDisplay();
+    }
+
+    $('pomoSaveBtn').addEventListener('click', () => {
+        const task = $('pomoModalTask').value;
+        const outcome = $('pomoOutcome').value;
+        const failReason = $('pomoFailReason').value;
+        const markComplete = $('pomoMarkComplete').checked;
+        const secondsLogged = pomoTotalTime - (pomoTimeLeft > 0 ? pomoTimeLeft : 0);
+        const minsLogged = Math.floor(secondsLogged / 60);
+        S().pomoLogs.push({
+            date: new Date().toLocaleDateString(),
+            task,
+            taskId: selectedFocusTaskId || null,
+            outcome,
+            reason: outcome === 'Fail' ? failReason : 'Success',
+            minutes: minsLogged
+        });
+
+        // Epic 11: Sync actualMinutes — handle taskId|subtaskId format
+        if (selectedFocusTaskId) {
+            const parts = selectedFocusTaskId.split('|');
+            const parentTask = S().links.find(l => l && l.id === parts[0]);
+            if (parentTask) {
+                if (parts.length > 1) {
+                    // Subtask focused — add to subtask AND roll up to parent
+                    const sub = (parentTask.subtasks || []).find(s => s.id === parts[1]);
+                    if (sub) {
+                        sub.actualMinutes = (sub.actualMinutes || 0) + minsLogged;
+                        // Epic 12: Mark subtask complete if checked
+                        if (markComplete) sub.isCompleted = true;
+                    }
+                    // Roll up: sum all subtask actuals to parent
+                    parentTask.actualMinutes = (parentTask.subtasks || [])
+                        .reduce((sum, s) => sum + (s.actualMinutes || 0), 0);
+                } else {
+                    // Parent task focused
+                    parentTask.actualMinutes = (parentTask.actualMinutes || 0) + minsLogged;
+                    // Epic 12: Mark parent complete if checked
+                    if (markComplete) parentTask.isCompleted = true;
+                }
+            }
+        }
+
+        persistState();
+        $('pomoModal').close();
+        renderSidebar();
+        renderBuckets();
+    });
+
+    function resetPomo() {
+        clearInterval(pomoTimerId);
+        isPomoRunning = false;
+        const minsInput = $('pomoMins');
+        if (minsInput) {
+            minsInput.disabled = false;
+            let val = parseInt(minsInput.value);
+            if (isNaN(val) || val < 1) { val = 25; minsInput.value = '25'; }
+            pomoTimeLeft = val * 60;
+        }
+        const btn = $('pomoBtn');
+        if (btn) { btn.textContent = 'Start'; btn.style.backgroundColor = 'var(--color-primary)'; }
+        updatePomoDisplay();
+    }
+
+    function updatePomoDisplay() {
+        const d = $('pomoDisplay');
+        if (!d) return;
+        if (isNaN(pomoTimeLeft) || pomoTimeLeft < 0) pomoTimeLeft = 0;
+        const m = Math.floor(pomoTimeLeft / 60).toString().padStart(2, '0');
+        const s = (pomoTimeLeft % 60).toString().padStart(2, '0');
+        d.textContent = `${m}:${s}`;
+    }
+
+    // ============================================================
+    // COST TRACKER
+    // ============================================================
+
+    function toggleCost() {
+        const btn = $('costBtn');
+        if (isCostRunning) {
+            clearInterval(costTimerId);
+            if (btn) { btn.textContent = 'Resume'; btn.style.backgroundColor = 'var(--color-success)'; }
+        } else {
+            const rateInput = $('costRate');
+            const attInput = $('costAttendees');
+            if (rateInput) rateInput.disabled = true;
+            if (attInput) attInput.disabled = true;
+            if (btn) { btn.textContent = 'Pause'; btn.style.backgroundColor = 'var(--color-danger)'; }
+            costTimerId = setInterval(() => { costSeconds++; updateCostDisplay(); }, 1000);
+        }
+        isCostRunning = !isCostRunning;
+    }
+
+    function resetCost() {
+        clearInterval(costTimerId);
+        isCostRunning = false;
+        costSeconds = 0;
+        const rateInput = $('costRate');
+        const attInput = $('costAttendees');
+        const btn = $('costBtn');
+        if (rateInput) rateInput.disabled = false;
+        if (attInput) attInput.disabled = false;
+        if (btn) { btn.textContent = 'Start'; btn.style.backgroundColor = 'var(--color-success)'; }
+        updateCostDisplay();
+    }
+
+    function updateCostDisplay() {
+        const d = $('costDisplay');
+        if (!d) return;
+        const rate = parseFloat($('costRate')?.value) || 100;
+        const att = parseInt($('costAttendees')?.value) || 4;
+        d.textContent = '$' + ((rate * att) * (costSeconds / 3600)).toFixed(2);
+    }
+
+    // ============================================================
+    // NOTES
+    // ============================================================
+
+    function saveNote() {
+        const textObj = $('quickNoteText');
+        const text = textObj?.value.trim();
+        if (text) {
+            const id = Date.now().toString();
+            const dateStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const title = text.split('\n')[0].substring(0, 25) + (text.length > 25 ? '...' : '');
+            S().notes.unshift({ id, title, text, date: dateStr });
+            persistState();
+            textObj.value = '';
+            renderNotes();
+        }
+    }
+
+    function renderNotes() {
+        const container = $('notesDisplay');
+        if (!container) return;
+        container.innerHTML = '';
+        (S().notes || []).forEach(note => {
+            const li = el('li', { className: 'note-item' });
+            const displayTitle = note.title || (note.text.split('\n')[0].substring(0, 25) + '...');
+            li.appendChild(el('span', { className: 'note-title' }, displayTitle));
+            li.appendChild(el('span', { style: { color: 'var(--color-text-muted)', fontSize: '0.8em' } }, note.date));
+            li.addEventListener('click', () => openNote(note.id));
+            container.appendChild(li);
+        });
+    }
+
+    function openNote(id) {
+        const note = S().notes.find(n => n.id === id);
+        if (!note) return;
+        $('modalDate').textContent = `Created: ${note.date}`;
+        $('modalNoteTitle').value = note.title || '';
+        $('modalTextEdit').value = note.text;
+        $('saveNoteEditBtn').onclick = () => {
+            note.title = $('modalNoteTitle').value.trim() || 'Untitled Note';
+            note.text = $('modalTextEdit').value.trim();
+            persistState();
+            renderNotes();
+            $('noteModal').close();
+        };
+        $('deleteNoteBtn').onclick = () => {
+            S().notes = S().notes.filter(n => n.id !== id);
+            persistState();
+            renderNotes();
+            $('noteModal').close();
+        };
+        $('noteModal').showModal();
+    }
+
+    // ============================================================
+    // CLOCKS
+    // ============================================================
+
+    function addClock() {
+        const tz = $('timezoneSelect').value;
+        S().clocks.push({ label: tz.split('/').pop().replace('_', ' '), tz });
+        persistState();
+        renderClocks();
+    }
+
+    function renderClocks() {
+        const container = $('clocksDisplay');
+        if (!container) return;
+        container.innerHTML = '';
+        (S().clocks || []).forEach((c, index) => {
+            if (!c || !c.label) return;
+            const div = el('div', { className: 'clock-item' });
+            const label = el('span', { className: 'clock-label', contentEditable: 'true', spellcheck: 'false' }, c.label);
+            label.addEventListener('blur', () => {
+                const newLabel = label.textContent.trim();
+                if (newLabel) S().clocks[index].label = newLabel;
+                persistState();
+            });
+            label.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); label.blur(); } });
+            div.appendChild(label);
+            div.appendChild(el('span', { className: 'clock-time', id: `clock-time-${index}` }, '--:--:--'));
+            if (index !== 0) {
+                const removeBtn = el('button', { className: 'danger', style: { position: 'absolute', top: '4px', right: '4px', padding: '2px 6px', fontSize: '0.7em', background: 'transparent', color: 'var(--color-danger)', border: 'none' } }, 'X');
+                removeBtn.addEventListener('click', () => {
+                    S().clocks.splice(index, 1);
+                    persistState();
+                    renderClocks();
+                });
+                div.appendChild(removeBtn);
+            }
+            container.appendChild(div);
+        });
+        updateTime();
+    }
+
+    function updateTime() {
+        const now = new Date();
+        (S()?.clocks || []).forEach((c, index) => {
+            const el = $(`clock-time-${index}`);
+            if (el && c) {
+                try {
+                    el.textContent = new Intl.DateTimeFormat('en-US', {
+                        hour: '2-digit', minute: '2-digit', second: '2-digit',
+                        hour12: true, timeZoneName: 'short',
+                        timeZone: c.tz !== 'Local' ? c.tz : undefined
+                    }).format(now);
+                } catch { el.textContent = 'Invalid TZ'; }
+            }
+        });
+    }
+
+    // ============================================================
+    // BUCKET BOARD — SECURE RENDERING (no inline onclick)
+    // ============================================================
+
+    const resizeObserver = new ResizeObserver(entries => {
+        let changed = false;
+        for (const entry of entries) {
+            const el = entry.target;
+            const itemId = el.dataset.id;
+            if (itemId) {
+                if (!S().bucketSizes[itemId]) S().bucketSizes[itemId] = {};
+                S().bucketSizes[itemId].w = el.offsetWidth;
+                S().bucketSizes[itemId].h = el.offsetHeight;
+                changed = true;
+            }
+        }
+        if (changed) persistState();
+    });
+
+    function makeDraggable(element, itemId) {
+        const handle = element.querySelector('.drag-handle');
+        let isDragging = false, startX, startY, initialLeft, initialTop;
+
+        const startDrag = (e) => {
+            const isTouch = e.type === 'touchstart';
+            if (isTouch && e.cancelable) e.preventDefault();
+            isDragging = true;
+            const cx = isTouch ? e.touches[0].clientX : e.clientX;
+            const cy = isTouch ? e.touches[0].clientY : e.clientY;
+            initialLeft = element.offsetLeft; initialTop = element.offsetTop;
+            startX = cx; startY = cy;
+            element.classList.add('dragging');
+            $('bucketBoard').classList.add('show-grid');
+
+            const onMove = (me) => {
+                if (!isDragging) return;
+                if (me.type === 'touchmove' && me.cancelable) me.preventDefault();
+                const mx = me.type === 'touchmove' ? me.touches[0].clientX : me.clientX;
+                const my = me.type === 'touchmove' ? me.touches[0].clientY : me.clientY;
+                element.style.left = `${initialLeft + mx - startX}px`;
+                element.style.top = `${initialTop + my - startY}px`;
+            };
+
+            const onEnd = () => {
+                if (!isDragging) return;
+                isDragging = false;
+                document.removeEventListener('mousemove', onMove);
+                document.removeEventListener('mouseup', onEnd);
+                document.removeEventListener('touchmove', onMove);
+                document.removeEventListener('touchend', onEnd);
+                element.classList.remove('dragging');
+                $('bucketBoard').classList.remove('show-grid');
+                let x = Math.max(0, Math.round((parseInt(element.style.left) || 0) / 20) * 20);
+                let y = Math.max(0, Math.round((parseInt(element.style.top) || 0) / 20) * 20);
+                element.style.left = x + 'px';
+                element.style.top = y + 'px';
+                if (!S().bucketSizes[itemId]) S().bucketSizes[itemId] = {};
+                S().bucketSizes[itemId].x = x;
+                S().bucketSizes[itemId].y = y;
+                persistState();
+            };
+
+            document.addEventListener('mousemove', onMove);
+            document.addEventListener('mouseup', onEnd);
+            document.addEventListener('touchmove', onMove, { passive: false });
+            document.addEventListener('touchend', onEnd);
+        };
+
+        handle.addEventListener('mousedown', startDrag);
+        handle.addEventListener('touchstart', startDrag, { passive: false });
+    }
+
+    function renderBuckets() {
+        const board = $('bucketBoard');
+        board.innerHTML = '';
+        const maintenanceMode = S().isMaintenanceMode || false;
+        const isLibrary = currentView === 'library';
+        const isWorkspace = currentView === 'workspace';
+
+        (S().categories || []).forEach(cat => {
+            if (!cat) return;
+            const itemId = 'cat-' + cat;
+
+            // GEMINI_LOGIC (Epic 14): Pre-check if this bucket has ANY items for the current view
+            const viewItems = (S().links || []).filter(l => {
+                if (!l || l.category !== cat) return false;
+                if (isWorkspace && !l.isActionable) return false;
+                if (isLibrary && l.isActionable) return false;
+                return true;
+            });
+            // Hide empty buckets in view-filtered mode (unless it also has completed items to show)
+            if (viewItems.length === 0 && !showArchive) return;
+
+            const sizes = S().bucketSizes[itemId] || {};
+            const div = el('div', { className: 'category' });
+            div.dataset.id = itemId;
+            div.style.left = (parseInt(sizes.x) || 0) + 'px';
+            div.style.top = (parseInt(sizes.y) || 0) + 'px';
+            if (parseInt(sizes.w) > 100) div.style.width = sizes.w + 'px';
+            if (parseInt(sizes.h) > 50) div.style.height = sizes.h + 'px';
+
+            // Header
+            const header = el('div', { className: 'category-header' });
+            const h2 = el('h2');
+            const dragHandle = el('span', { className: 'drag-handle', title: 'Drag to move' }, '⠿');
+            h2.appendChild(dragHandle);
+            const bIcon = S().bucketIcons[itemId];
+            if (bIcon) {
+                const iconSpan = el('span', { style: { marginRight: '6px', fontSize: '1.1em' } }, bIcon);
+                h2.appendChild(iconSpan);
+            }
+            h2.appendChild(textNode(cat));
+
+            // Capacity indicator — only show in workspace view
+            if (isWorkspace) {
+                const bucketItems = (S().links || []).filter(l => l && l.category === cat && l.isActionable && l.estMinutes && !l.isCompleted);
+                const pendingMins = bucketItems.reduce((sum, l) => sum + (parseInt(l.estMinutes) || 0) - (parseInt(l.actualMinutes) || 0), 0);
+                if (pendingMins > 0) {
+                    const hrs = (pendingMins / 60).toFixed(1);
+                    const capBadge = el('span', { className: `capacity-badge${pendingMins > 480 ? ' danger' : pendingMins > 240 ? ' warning' : ''}` }, `⏱️ ${hrs}h pending`);
+                    h2.appendChild(capBadge);
+                }
+            }
+
+            header.appendChild(h2);
+
+            const actions = el('div', { className: 'hover-actions', style: { position: 'static', opacity: '1', background: 'transparent' } });
+            const editBucketBtn = el('button', { className: 'secondary', title: 'Edit Bucket', style: { padding: '4px 8px' } }, '✏️');
+            editBucketBtn.addEventListener('click', () => openBucketModal(cat));
+            const delBucketBtn = el('button', { className: 'danger', title: 'Delete Bucket', style: { padding: '4px 8px' } }, 'X');
+            delBucketBtn.addEventListener('click', () => deleteCategory(cat));
+            actions.appendChild(editBucketBtn);
+            actions.appendChild(delBucketBtn);
+            header.appendChild(actions);
+            div.appendChild(header);
+
+            // GEMINI_LOGIC (Epic 14): Filter links — view mode, maintenance, archive, completion
+            const filteredLinks = (S().links || []).filter(l => {
+                if (!l) return false;
+                if (l.category !== cat) return false;
+                // Epic 14: View filtering
+                if (isWorkspace && !l.isActionable) return false;
+                if (isLibrary && l.isActionable) return false;
+                if (maintenanceMode) return (l.bumpCount || 0) > 2;
+                if (l.isCompleted && !showArchive) return false;
+                return true;
+            });
+
+            // Links list
+            const ul = el('ul', { className: 'link-list' });
+
+            if (filteredLinks.length === 0) {
+                const emptyMsg = maintenanceMode
+                    ? 'No systemic debt here. Great job.'
+                    : isLibrary
+                    ? 'No bookmarks here yet. Paste a URL in the capture bar above.'
+                    : 'No tasks here. Click + Add Case to start building.';
+                ul.appendChild(el('div', { className: 'bucket-empty-state' }, emptyMsg));
+            }
+
+            filteredLinks.forEach(link => {
+                // Epic 16: Tinted priority cards
+                let itemClass = 'link-item';
+                if (link.isCompleted) itemClass += ' completed-item';
+                else if (link.priority === 'high') itemClass += ' tint-high';
+                else if (link.priority === 'med') itemClass += ' tint-med';
+                else if (link.priority === 'low') itemClass += ' tint-low';
+                const li = el('li', { className: itemClass });
+                const linkHeader = el('div', { className: 'link-header' });
+                const iconSpan = el('span', { className: 'link-icon' });
+                iconSpan.appendChild(renderLinkIcon(link));
+                linkHeader.appendChild(iconSpan);
+
+                // Epic 18: Title behavior — workspace opens modal, library opens URL
+                const primaryUrl = getPrimaryUrl(link);
+                if (isLibrary && primaryUrl && isUrlSafe(primaryUrl)) {
+                    const a = el('a', { href: primaryUrl, target: '_blank', rel: 'noopener noreferrer', className: 'link-title' }, link.name);
+                    linkHeader.appendChild(a);
+                } else {
+                    // Workspace: clicking title opens the case modal
+                    const titleSpan = el('span', { className: 'link-title', style: { cursor: 'pointer' } }, link.name);
+                    titleSpan.addEventListener('click', () => openLinkModal(null, link.id));
+                    linkHeader.appendChild(titleSpan);
+                }
+
+                // Case key badge
+                if (link.caseKey) {
+                    linkHeader.appendChild(el('span', { className: 'case-key' }, link.caseKey));
+                }
+
+                li.appendChild(linkHeader);
+
+                if (link.description) {
+                    li.appendChild(el('div', { className: 'link-desc' }, link.description));
+                }
+
+                // Epic 18: Resources in collapsible <details>
+                const resources = link.resources || (link.url ? [{ title: '', url: link.url }] : []);
+                const validResources = resources.filter(r => r && r.url);
+                if (validResources.length > 0) {
+                    const details = document.createElement('details');
+                    details.className = 'resources-collapsible';
+                    const summary = document.createElement('summary');
+                    summary.textContent = `🔗 ${validResources.length} Attached Resource${validResources.length > 1 ? 's' : ''}`;
+                    details.appendChild(summary);
+                    const chipsDiv = el('div', { className: 'resource-chips' });
+                    validResources.forEach(r => {
+                        const chip = el('span', { className: 'resource-chip' });
+                        const chipLabel = r.title || ((() => { try { return new URL(r.url).hostname; } catch { return 'Link'; } })());
+                        const chipLink = el('a', { href: isUrlSafe(r.url) ? r.url : '#', target: '_blank', rel: 'noopener noreferrer' }, chipLabel);
+                        if (!isUrlSafe(r.url)) chipLink.addEventListener('click', (ev) => ev.preventDefault());
+                        chip.appendChild(chipLink);
+                        chipsDiv.appendChild(chip);
+                    });
+                    details.appendChild(chipsDiv);
+                    li.appendChild(details);
+                }
+
+                // Subtask progress (Epic 3)
+                if (link.subtasks && link.subtasks.length > 0) {
+                    const done = link.subtasks.filter(s => s.isCompleted).length;
+                    const total = link.subtasks.length;
+                    const pct = Math.round((done / total) * 100);
+                    const stRow = el('div', { style: { marginLeft: '24px', marginTop: '4px', fontSize: '0.75em', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', gap: '6px' } });
+                    stRow.appendChild(el('span', {}, `${done}/${total} subtasks`));
+                    const barOuter = el('div', { style: { flex: '1', height: '4px', background: 'var(--color-border)', borderRadius: '2px', overflow: 'hidden', maxWidth: '80px' } });
+                    barOuter.appendChild(el('div', { style: { width: `${pct}%`, height: '100%', background: pct === 100 ? 'var(--color-success)' : 'var(--color-primary)', transition: 'width 0.3s' } }));
+                    stRow.appendChild(barOuter);
+                    li.appendChild(stRow);
+                }
+
+                // Case metadata badges
+                const meta = el('div', { className: 'case-meta' });
+                if (link.isActionable && link.workType) {
+                    const cls = link.workType === 'strategic' ? 'strategic' : 'reactive';
+                    meta.appendChild(el('span', { className: `case-badge ${cls}` }, link.workType === 'strategic' ? '🎯 Strategic' : '🔥 Reactive'));
+                }
+                if (link.estMinutes) {
+                    meta.appendChild(el('span', { className: 'case-badge est' }, `⏱ ${link.estMinutes}m est`));
+                }
+                if (link.actualMinutes) {
+                    meta.appendChild(el('span', { className: 'case-badge actual' }, `✅ ${link.actualMinutes}m actual`));
+                }
+                if (link.isActionable && link.source) {
+                    const sourceLabels = { slack: '💬 Slack', email: '📧 Email', meeting: '📅 Meeting', ticket: '🎫 Ticket', self: '🧠 Self' };
+                    meta.appendChild(el('span', { className: 'case-badge source' }, sourceLabels[link.source] || link.source));
+                }
+                if (link.subTag) {
+                    meta.appendChild(el('span', { className: `case-badge ${link.workType === 'strategic' ? 'strategic' : 'reactive'}` }, link.subTag));
+                }
+                if ((link.bumpCount || 0) > 0) {
+                    meta.appendChild(el('span', { className: 'case-badge bumps' }, `⤴️ ${link.bumpCount}x bumped`));
+                }
+                if (link.priority) {
+                    const pcls = link.priority === 'high' ? 'priority-high' : link.priority === 'med' ? 'priority-med' : 'priority-low';
+                    const plabel = link.priority === 'high' ? '🔴 High' : link.priority === 'med' ? '🟡 Med' : '🟢 Low';
+                    meta.appendChild(el('span', { className: `case-badge ${pcls}` }, plabel));
+                }
+                if (link.dueDate) {
+                    const due = new Date(link.dueDate + 'T00:00:00');
+                    const now = new Date(); now.setHours(0,0,0,0);
+                    const isOverdue = !link.isCompleted && due < now;
+                    const dueBadge = el('span', { className: `due-date-badge${isOverdue ? ' overdue' : ''}` },
+                        `📅 ${due.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`);
+                    meta.appendChild(dueBadge);
+                }
+                if (meta.childNodes.length > 0) li.appendChild(meta);
+
+                // Hover actions — context-aware for view mode
+                const hoverActions = el('div', { className: 'hover-actions' });
+                if (link.isCompleted && showArchive) {
+                    const undoBtn = el('button', { className: 'secondary', title: 'Reopen item', style: { padding: '2px 6px', fontSize: '0.7em' } }, '↩️');
+                    undoBtn.addEventListener('click', () => { link.isCompleted = false; persistState(); renderBuckets(); });
+                    hoverActions.appendChild(undoBtn);
+                }
+                // Epic 15: In library view, show "Promote to Task" for bookmarks
+                if (isLibrary && !link.isActionable) {
+                    const promoteBtn = el('button', { className: 'promote-btn', title: 'Promote to Task' }, '⚡ Task');
+                    promoteBtn.addEventListener('click', () => promoteToTask(link.id));
+                    hoverActions.appendChild(promoteBtn);
+                }
+                if (!link.caseKey && isWorkspace) {
+                    const promoteBtn = el('button', { className: 'promote-btn', title: 'Promote to tracked Case' }, '📋→🎯');
+                    promoteBtn.addEventListener('click', () => promoteToCase(link.id));
+                    hoverActions.appendChild(promoteBtn);
+                }
+                if (isWorkspace) {
+                    const bumpBtn = el('button', { className: 'secondary', title: 'Bump to Backlog', style: { padding: '2px 6px', fontSize: '0.7em' } }, '⤴️');
+                    bumpBtn.addEventListener('click', () => openBumpModal(link.id));
+                    hoverActions.appendChild(bumpBtn);
+                }
+                // Epic 19: SVG update icon button
+                const editLinkBtn = el('button', { className: 'secondary icon-btn', title: 'Update Case' });
+                editLinkBtn.innerHTML = '<svg viewBox="0 0 16 16" fill="currentColor"><path d="M12.15 2.15a1.5 1.5 0 0 1 2.12 0l-.7.7.7-.7a1.5 1.5 0 0 1 0 2.12l-8.49 8.49a.5.5 0 0 1-.17.11l-3.5 1.5a.5.5 0 0 1-.65-.65l1.5-3.5a.5.5 0 0 1 .11-.17l8.49-8.49zm1.41.71a.5.5 0 0 0-.7 0L4.36 11.36l-.9 2.12 2.12-.9 8.49-8.49a.5.5 0 0 0 0-.7l-.7-.7z"/></svg>';
+                editLinkBtn.addEventListener('click', () => openLinkModal(null, link.id));
+                const delLinkBtn = el('button', { className: 'danger', title: 'Remove Case' }, 'X');
+                delLinkBtn.addEventListener('click', () => deleteLink(link.id));
+                hoverActions.appendChild(editLinkBtn);
+                hoverActions.appendChild(delLinkBtn);
+                li.appendChild(hoverActions);
+                ul.appendChild(li);
+            });
+            div.appendChild(ul);
+
+            // Add button — context-aware label
+            const addLabel = isLibrary ? '+ Add Bookmark' : '+ Add Case';
+            const addCaseBtn = el('button', { className: 'bucket-add-btn' }, addLabel);
+            addCaseBtn.addEventListener('click', () => openLinkModal(cat));
+            div.appendChild(addCaseBtn);
+
+            board.appendChild(div);
+            makeDraggable(div, itemId);
+            resizeObserver.observe(div);
+        });
+
+        calculateMaturity();
+    }
+
+    // ============================================================
+    // BUCKET & LINK MODALS
+    // ============================================================
+
+    function openBucketModal(existingName) {
+        const nameInput = $('bucketModalName');
+        const iconInput = $('bucketModalIcon');
+        const oldInput = $('bucketModalOldName');
+
+        if (existingName) {
+            $('bucketModalTitle').textContent = 'Edit Bucket';
+            nameInput.value = existingName;
+            oldInput.value = existingName;
+            iconInput.value = S().bucketIcons['cat-' + existingName] || '';
+        } else {
+            $('bucketModalTitle').textContent = 'Add Bucket';
+            nameInput.value = '';
+            oldInput.value = '';
+            iconInput.value = '';
+        }
+        $('bucketModal').showModal();
+    }
+
+    $('bucketModalSave').addEventListener('click', () => {
+        const oldName = $('bucketModalOldName').value;
+        const newName = $('bucketModalName').value.trim();
+        const newIcon = $('bucketModalIcon').value.trim();
+
+        if (!newName) { alert('Bucket name is required.'); return; }
+
+        const cats = S().categories;
+        if (oldName) {
+            if (newName !== oldName && cats.map(c => c.toLowerCase()).includes(newName.toLowerCase())) { alert('Bucket exists.'); return; }
+            if (newName !== oldName) {
+                cats[cats.indexOf(oldName)] = newName;
+                S().links.forEach(link => { if (link && link.category === oldName) link.category = newName; });
+                if (S().bucketSizes['cat-' + oldName]) { S().bucketSizes['cat-' + newName] = S().bucketSizes['cat-' + oldName]; delete S().bucketSizes['cat-' + oldName]; }
+                if (S().bucketIcons['cat-' + oldName]) delete S().bucketIcons['cat-' + oldName];
+            }
+            S().bucketIcons['cat-' + newName] = newIcon;
+        } else {
+            if (cats.map(c => c.toLowerCase()).includes(newName.toLowerCase())) { alert('Bucket exists.'); return; }
+            cats.push(newName);
+            S().bucketSizes['cat-' + newName] = { x: 40, y: 40 };
+            S().bucketIcons['cat-' + newName] = newIcon;
+        }
+
+        persistState();
+        $('bucketModal').close();
+        renderBuckets();
+    });
+
+    $('bucketModalClose').addEventListener('click', () => $('bucketModal').close());
+
+    function deleteCategory(catName) {
+        if (confirm(`Delete the "${catName}" bucket and all its items?`)) {
+            S().categories = S().categories.filter(c => c !== catName);
+            S().links = S().links.filter(l => l && l.category !== catName);
+            const sizeKey = 'cat-' + catName;
+            delete S().bucketSizes[sizeKey];
+            delete S().bucketIcons[sizeKey];
+            persistState();
+            renderBuckets();
+        }
+    }
+
+    // --- Modal transient state ---
+    let modalResources = [];
+    let modalSubtasks = [];
+    let modalActivityLog = [];
+
+    function renderModalResources() {
+        const container = $('resourcesList');
+        container.innerHTML = '';
+        modalResources.forEach((r, i) => {
+            const chip = el('span', { className: 'resource-chip' });
+            const label = r.title || ((() => { try { return new URL(r.url).hostname; } catch { return 'Link'; } })());
+            chip.appendChild(el('a', { href: isUrlSafe(r.url) ? r.url : '#', target: '_blank', rel: 'noopener noreferrer' }, label));
+            const removeBtn = el('span', { className: 'remove-resource' }, '×');
+            removeBtn.addEventListener('click', () => { modalResources.splice(i, 1); renderModalResources(); });
+            chip.appendChild(removeBtn);
+            container.appendChild(chip);
+        });
+    }
+
+    function renderModalSubtasks() {
+        const container = $('subtaskList');
+        container.innerHTML = '';
+        modalSubtasks.forEach((st, i) => {
+            const div = el('div', { className: `subtask-item ${st.isCompleted ? 'completed' : ''}` });
+            const cb = el('input', { type: 'checkbox' });
+            cb.checked = st.isCompleted;
+            cb.addEventListener('change', () => { modalSubtasks[i].isCompleted = cb.checked; renderModalSubtasks(); });
+            div.appendChild(cb);
+            div.appendChild(el('span', {}, st.title));
+            if (st.estMinutes) div.appendChild(el('span', { className: 'subtask-est' }, `${st.estMinutes}m`));
+            const delBtn = el('button', { className: 'danger', style: { padding: '1px 5px', fontSize: '0.7em' } }, '×');
+            delBtn.addEventListener('click', () => { modalSubtasks.splice(i, 1); renderModalSubtasks(); });
+            div.appendChild(delBtn);
+            container.appendChild(div);
+        });
+    }
+
+    function renderModalActivity() {
+        const container = $('activityFeed');
+        container.innerHTML = '';
+        modalActivityLog.slice().reverse().forEach(entry => {
+            const div = el('div', { className: `activity-entry type-${entry.type}` });
+            const typeLabels = { update: '✅', blocker: '🚧', insight: '💡', note: '📝' };
+            div.appendChild(el('div', {}, `${typeLabels[entry.type] || '📝'} ${entry.content}`));
+            const ts = entry.timestamp ? new Date(entry.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+            div.appendChild(el('div', { className: 'activity-meta' }, ts));
+            container.appendChild(div);
+        });
+    }
+
+    // Actionable toggle
+    $('linkModalActionable').addEventListener('change', (e) => {
+        const fields = $('actionableFields');
+        const toggle = $('actionableToggle');
+        if (e.target.checked) {
+            fields.classList.add('visible');
+            toggle.classList.add('active');
+        } else {
+            fields.classList.remove('visible');
+            toggle.classList.remove('active');
+        }
+    });
+
+    // Add resource
+    $('btnAddResource').addEventListener('click', () => {
+        const url = $('newResourceUrl').value.trim();
+        const title = $('newResourceTitle').value.trim();
+        if (!url) return;
+        if (!isUrlSafe(url)) { alert('Only http, https, and mailto URLs are allowed.'); return; }
+        modalResources.push({ title, url });
+        $('newResourceUrl').value = '';
+        $('newResourceTitle').value = '';
+        renderModalResources();
+    });
+
+    // Add subtask
+    $('btnAddSubtask').addEventListener('click', () => {
+        const title = $('newSubtaskTitle').value.trim();
+        const est = parseInt($('newSubtaskEst').value) || 0;
+        if (!title) return;
+        modalSubtasks.push({ id: Date.now().toString(36), title, isCompleted: false, estMinutes: est });
+        $('newSubtaskTitle').value = '';
+        $('newSubtaskEst').value = '';
+        renderModalSubtasks();
+    });
+
+    // Add activity entry
+    $('btnAddActivity').addEventListener('click', () => {
+        const content = $('activityContent').value.trim();
+        const type = $('activityType').value;
+        if (!content) return;
+        modalActivityLog.push({ id: Date.now().toString(36), timestamp: new Date().toISOString(), type, content });
+        $('activityContent').value = '';
+        renderModalActivity();
+    });
+
+    function openLinkModal(categoryId, linkId) {
+        const catSelect = $('linkModalCategory');
+        catSelect.innerHTML = '';
+        S().categories.forEach(c => {
+            catSelect.appendChild(el('option', { value: c }, c));
+        });
+
+        if (linkId) {
+            const link = S().links.find(l => l && l.id === linkId);
+            if (!link) return;
+            // GEMINI_LOGIC (Epic 20): Title reflects current state
+            $('linkModalTitle').textContent = link.isActionable ? 'Update Task' : 'Update Bookmark';
+            $('linkModalId').value = link.id;
+            catSelect.value = link.category;
+            $('linkModalName').value = link.name || '';
+            $('linkModalDesc').value = link.description || '';
+            $('linkModalIcon').value = link.customIcon || '';
+
+            // Actionable toggle
+            const isAct = link.isActionable || false;
+            $('linkModalActionable').checked = isAct;
+            $('actionableFields').classList.toggle('visible', isAct);
+            $('actionableToggle').classList.toggle('active', isAct);
+
+            // Unified taxonomy
+            const taxValue = link.workType ? `${link.workType}:${link.subTag || ''}` : '';
+            populateTaxonomyDropdown(taxValue);
+            $('linkModalEstMins').value = link.estMinutes || '';
+            $('linkModalSource').value = link.source || '';
+
+            // Priority & Due Date
+            $('linkModalPriority').value = link.priority || '';
+            $('linkModalDueDate').value = link.dueDate || '';
+
+            // Resources — migrate from legacy url if needed
+            modalResources = link.resources ? [...link.resources] : (link.url ? [{ title: '', url: link.url }] : []);
+            modalSubtasks = link.subtasks ? link.subtasks.map(s => ({ ...s })) : [];
+            modalActivityLog = link.activityLog ? [...link.activityLog] : [];
+
+            // Show activity section for existing items
+            $('activitySection').style.display = 'block';
+        } else {
+            // GEMINI_LOGIC (Epic 20): New item — mode depends on current view
+            const isTaskMode = currentView === 'workspace';
+            $('linkModalTitle').textContent = isTaskMode ? 'Add Task' : 'Add Bookmark';
+            $('linkModalId').value = '';
+            if (categoryId) catSelect.value = categoryId;
+            $('linkModalName').value = '';
+            $('linkModalDesc').value = '';
+            $('linkModalIcon').value = '';
+
+            // Pre-check actionable in workspace view
+            $('linkModalActionable').checked = isTaskMode;
+            $('actionableFields').classList.toggle('visible', isTaskMode);
+            $('actionableToggle').classList.toggle('active', isTaskMode);
+
+            populateTaxonomyDropdown('');
+            $('linkModalEstMins').value = '';
+            $('linkModalSource').value = '';
+            $('linkModalPriority').value = '';
+            $('linkModalDueDate').value = '';
+            modalResources = [];
+            modalSubtasks = [];
+            modalActivityLog = [];
+            $('activitySection').style.display = 'none';
+        }
+        $('newResourceUrl').value = '';
+        $('newResourceTitle').value = '';
+        $('newSubtaskTitle').value = '';
+        $('newSubtaskEst').value = '';
+        $('activityContent').value = '';
+        renderModalResources();
+        renderModalSubtasks();
+        renderModalActivity();
+        $('linkModal').showModal();
+    }
+
+    // Epic 4: Generate YYMMDD-XX case key
+    function generateCaseKey() {
+        const today = new Date();
+        const dateString = String(today.getFullYear()).slice(-2)
+            + String(today.getMonth() + 1).padStart(2, '0')
+            + String(today.getDate()).padStart(2, '0');
+
+        if (!S().dailyCounter || S().dailyCounter.date !== dateString) {
+            S().dailyCounter = { date: dateString, count: 1 };
+        } else {
+            S().dailyCounter.count += 1;
+        }
+        return `${dateString}-${String(S().dailyCounter.count).padStart(2, '0')}`;
+    }
+
+    // Epic 3: Subtask roll-up — if subtasks exist, sum their estMinutes as parent's estMinutes
+    function rollUpSubtaskEstimates(link) {
+        if (link.subtasks && link.subtasks.length > 0) {
+            const sum = link.subtasks.reduce((acc, s) => acc + (parseInt(s.estMinutes) || 0), 0);
+            if (sum > 0) link.estMinutes = sum;
+        }
+    }
+
+    $('linkModalSave').addEventListener('click', () => {
+        const id = $('linkModalId').value;
+        const category = $('linkModalCategory').value;
+        let name = $('linkModalName').value.trim();
+        const desc = $('linkModalDesc').value.trim();
+        const customIcon = $('linkModalIcon').value.trim();
+        const isActionable = $('linkModalActionable').checked;
+        const estMinutes = parseInt($('linkModalEstMins').value) || 0;
+        const source = $('linkModalSource').value;
+        const priority = $('linkModalPriority')?.value || '';
+        const dueDate = $('linkModalDueDate')?.value || '';
+
+        // GEMINI_LOGIC (Epic 10): Split unified taxonomy "workType:subTag"
+        const taxValue = $('linkModalTaxonomy')?.value || '';
+        const taxParts = taxValue.split(':');
+        const workType = isActionable ? (taxParts[0] || '') : '';
+        const subTag = isActionable ? (taxParts[1] || '') : '';
+
+        // GEMINI_LOGIC (Epic 20): Dynamic required fields based on mode
+        if (isActionable) {
+            // Task mode: Title is required, URL is optional
+            if (!name) { alert('Title is required for tasks.'); return; }
+        } else {
+            // Bookmark mode: At least one URL is required, Title is optional (metadata proxy fills it)
+            if (modalResources.length === 0) { alert('At least one URL is required for bookmarks.'); return; }
+            // If no title provided, use hostname of first resource as fallback
+            if (!name && modalResources.length > 0) {
+                try { name = new URL(modalResources[0].url).hostname; } catch { name = 'Untitled Bookmark'; }
+            }
+        }
+
+        // Validate all resources have safe URLs
+        for (const r of modalResources) {
+            if (!isUrlSafe(r.url)) { alert(`Resource URL "${r.url}" is not allowed. Only http/https/mailto.`); return; }
+        }
+
+        if (id) {
+            // Update existing
+            const link = S().links.find(l => l && l.id === id);
+            if (link) {
+                link.category = category; link.name = name;
+                link.description = desc; link.customIcon = customIcon;
+                link.isActionable = isActionable;
+                link.workType = workType;
+                link.subTag = subTag;
+                link.estMinutes = isActionable ? estMinutes : (link.estMinutes || 0);
+                link.source = isActionable ? source : (link.source || '');
+                link.priority = priority;
+                link.dueDate = dueDate;
+                link.resources = [...modalResources];
+                link.subtasks = modalSubtasks.map(s => ({ ...s }));
+                link.activityLog = [...modalActivityLog];
+                delete link.url;
+                rollUpSubtaskEstimates(link);
+            }
+        } else {
+            // Create new with case key
+            const caseKey = generateCaseKey();
+            const newItem = {
+                id: Date.now().toString(36),
+                caseKey,
+                name, description: desc, category, customIcon,
+                isActionable, isCompleted: false,
+                workType, subTag,
+                estMinutes: isActionable ? estMinutes : 0,
+                source: isActionable ? source : '',
+                priority, dueDate,
+                resources: [...modalResources],
+                subtasks: modalSubtasks.map(s => ({ ...s })),
+                activityLog: [...modalActivityLog],
+                bumpCount: 0, bumpLog: [], actualMinutes: 0,
+            };
+            rollUpSubtaskEstimates(newItem);
+            S().links.push(newItem);
+        }
+
+        const bucketId = 'cat-' + category;
+        if (S().bucketSizes[bucketId]?.h) { delete S().bucketSizes[bucketId].h; }
+
+        persistState();
+        renderBuckets();
+        renderSidebar(); // refresh pomo task dropdown
+        $('linkModal').close();
+    });
+
+    $('linkModalClose').addEventListener('click', () => $('linkModal').close());
+
+    function deleteLink(id) {
+        S().links = S().links.filter(l => l && l.id !== id);
+        persistState();
+        renderBuckets();
+    }
+
+    // ============================================================
+    // BUMP MODAL (Epic 6)
+    // ============================================================
+
+    function openBumpModal(linkId) {
+        const link = S().links.find(l => l && l.id === linkId);
+        if (!link) return;
+        $('bumpModalLinkId').value = linkId;
+        $('bumpModalTaskName').textContent = link.name;
+        $('bumpReason').selectedIndex = 0;
+        $('bumpModal').showModal();
+    }
+
+    $('bumpModalSave').addEventListener('click', () => {
+        const linkId = $('bumpModalLinkId').value;
+        const reason = $('bumpReason').value;
+        const link = S().links.find(l => l && l.id === linkId);
+        if (!link) { $('bumpModal').close(); return; }
+
+        link.bumpCount = (link.bumpCount || 0) + 1;
+        if (!link.bumpLog) link.bumpLog = [];
+        link.bumpLog.push({ reason, timestamp: new Date().toISOString() });
+
+        if (!S().categories.includes('Backlog')) {
+            S().categories.push('Backlog');
+            S().bucketSizes['cat-Backlog'] = { x: 40, y: 40 };
+            S().bucketIcons['cat-Backlog'] = '📦';
+        }
+        link.category = 'Backlog';
+
+        persistState();
+        renderBuckets();
+        $('bumpModal').close();
+        debugLog(`Bumped case "${link.name}" (${link.bumpCount}x) — ${reason}`);
+    });
+
+    $('bumpModalClose').addEventListener('click', () => $('bumpModal').close());
+
+    // ============================================================
+    // EPIC 1: QUICK CAPTURE INBOX
+    // ============================================================
+
+    function ensureInbox() {
+        if (!S().categories.includes('Inbox')) {
+            S().categories.unshift('Inbox');
+            S().bucketSizes['cat-Inbox'] = { x: 0, y: 0 };
+            S().bucketIcons['cat-Inbox'] = '📥';
+        }
+    }
+
+    $('quickCaptureInput').addEventListener('keydown', async (e) => {
+        if (e.key !== 'Enter') return;
+        const input = e.target;
+        const value = input.value.trim();
+        if (!value) return;
+        input.value = '';
+
+        ensureInbox();
+
+        const isUrl = /^https?:\/\//i.test(value);
+        const newItem = {
+            id: Date.now().toString(36),
+            caseKey: '',
+            name: value,
+            description: '',
+            category: 'Inbox',
+            customIcon: '',
+            isActionable: false, isCompleted: false,
+            workType: '', subTag: '', estMinutes: 0, source: '',
+            priority: '', dueDate: '',
+            resources: isUrl ? [{ title: '', url: value }] : [],
+            subtasks: [], activityLog: [],
+            bumpCount: 0, bumpLog: [], actualMinutes: 0,
+        };
+
+        S().links.push(newItem);
+        persistState();
+        renderBuckets();
+        debugLog(`Quick captured: ${value}`);
+
+        // Epic 2: Attempt metadata fetch for URL items
+        if (isUrl) fetchMetaForItem(newItem.id, value);
+    });
+
+    function promoteToCase(linkId) {
+        const link = S().links.find(l => l && l.id === linkId);
+        if (!link) return;
+        link.caseKey = generateCaseKey();
+        persistState();
+        openLinkModal(null, link.id);
+    }
+
+    // Epic 15: Promote a bookmark to an actionable task
+    function promoteToTask(linkId) {
+        const link = S().links.find(l => l && l.id === linkId);
+        if (!link) return;
+        link.isActionable = true;
+        if (!link.caseKey) link.caseKey = generateCaseKey();
+        persistState();
+        // Switch to workspace view and open the modal in task mode
+        setView('workspace');
+        openLinkModal(null, link.id);
+    }
+
+    // ============================================================
+    // EPIC 2: METADATA PROXY (Client-side fetch hook)
+    // ============================================================
+
+    async function fetchMetaForItem(itemId, url) {
+        // GEMINI_LOGIC: In production, this calls the Cloudflare Worker endpoint.
+        // For local dev, we attempt a direct fetch (will fail on CORS-blocked sites).
+        try {
+            const proxyUrl = `/api/fetch-meta?url=${encodeURIComponent(url)}`;
+            const resp = await fetch(proxyUrl);
+            if (!resp.ok) return;
+            const meta = await resp.json();
+            const link = S().links.find(l => l && l.id === itemId);
+            if (!link) return;
+            if (meta.title && (!link.name || link.name === url)) link.name = meta.title;
+            if (meta.favicon && !link.customIcon) link.customIcon = meta.favicon;
+            persistState();
+            renderBuckets();
+        } catch {
+            // Silent fail — proxy not available locally
+        }
+    }
+
+    // ============================================================
+    // EPIC 10: UNIFIED TAXONOMY DROPDOWN
+    // ============================================================
+
+    // GEMINI_LOGIC: Build a single <select> with <optgroup> for each macro type.
+    // Values are formatted as "workType:subTag" and split on save.
+    function populateTaxonomyDropdown(selectedValue) {
+        const sel = $('linkModalTaxonomy');
+        if (!sel) return;
+        sel.innerHTML = '';
+        sel.appendChild(el('option', { value: '' }, '— Select taxonomy —'));
+        const taxonomy = S().taxonomy || { Reactive: [], Strategic: [] };
+
+        ['Reactive', 'Strategic'].forEach(macro => {
+            const wt = macro.toLowerCase();
+            const tags = taxonomy[macro] || [];
+            if (tags.length === 0) {
+                // If no sub-tags, just offer the macro itself
+                const emoji = macro === 'Reactive' ? '🔥' : '🎯';
+                sel.appendChild(el('option', { value: `${wt}:` }, `${emoji} ${macro} (General)`));
+            } else {
+                const group = document.createElement('optgroup');
+                group.label = `${macro === 'Reactive' ? '🔥' : '🎯'} ${macro}`;
+                tags.forEach(tag => {
+                    group.appendChild(el('option', { value: `${wt}:${tag}` }, tag));
+                });
+                sel.appendChild(group);
+            }
+        });
+
+        if (selectedValue) sel.value = selectedValue;
+    }
+
+    // ============================================================
+    // EPIC 3: TAXONOMY SETTINGS MODAL
+    // ============================================================
+
+    function renderTaxonomyTags() {
+        const taxonomy = S().taxonomy || { Reactive: [], Strategic: [] };
+        ['Reactive', 'Strategic'].forEach(macro => {
+            const containerId = macro === 'Reactive' ? 'taxonomyReactiveTags' : 'taxonomyStrategicTags';
+            const container = $(containerId);
+            if (!container) return;
+            container.innerHTML = '';
+            (taxonomy[macro] || []).forEach((tag, i) => {
+                const chip = el('span', { className: 'taxonomy-tag' });
+                chip.appendChild(textNode(tag));
+                const removeBtn = el('span', { className: 'remove-tag' }, '×');
+                removeBtn.addEventListener('click', () => {
+                    taxonomy[macro].splice(i, 1);
+                    S().taxonomy = taxonomy;
+                    persistState();
+                    renderTaxonomyTags();
+                });
+                chip.appendChild(removeBtn);
+                container.appendChild(chip);
+            });
+        });
+    }
+
+    $('btnSettings').addEventListener('click', () => {
+        renderTaxonomyTags();
+        $('settingsModal').showModal();
+    });
+    $('settingsModalClose').addEventListener('click', () => $('settingsModal').close());
+
+    $('btnAddReactiveTag').addEventListener('click', () => {
+        const input = $('newReactiveTag');
+        const tag = input.value.trim();
+        if (!tag) return;
+        if (!S().taxonomy) S().taxonomy = { Reactive: [], Strategic: [] };
+        if (!S().taxonomy.Reactive) S().taxonomy.Reactive = [];
+        S().taxonomy.Reactive.push(tag);
+        input.value = '';
+        persistState();
+        renderTaxonomyTags();
+    });
+
+    $('btnAddStrategicTag').addEventListener('click', () => {
+        const input = $('newStrategicTag');
+        const tag = input.value.trim();
+        if (!tag) return;
+        if (!S().taxonomy) S().taxonomy = { Reactive: [], Strategic: [] };
+        if (!S().taxonomy.Strategic) S().taxonomy.Strategic = [];
+        S().taxonomy.Strategic.push(tag);
+        input.value = '';
+        persistState();
+        renderTaxonomyTags();
+    });
+
+    // ============================================================
+    // EPIC 5: KPI DASHBOARD
+    // ============================================================
+
+    let isDashboardVisible = false;
+
+    $('btnWeeklyReview').addEventListener('click', () => {
+        isDashboardVisible = !isDashboardVisible;
+        const btn = $('btnWeeklyReview');
+        const board = $('boardLayout');
+        const dash = $('dashboardView');
+        const capture = $('quickCaptureInput')?.parentElement;
+        if (isDashboardVisible) {
+            btn.classList.add('active');
+            board.style.display = 'none';
+            if (capture) capture.style.display = 'none';
+            dash.classList.add('visible');
+            renderDashboard();
+        } else {
+            btn.classList.remove('active');
+            board.style.display = 'flex';
+            if (capture) capture.style.display = 'flex';
+            dash.classList.remove('visible');
+        }
+    });
+
+    function renderDashboard() {
+        const grid = $('dashboardGrid');
+        grid.innerHTML = '';
+        const links = S().links || [];
+        const actionable = links.filter(l => l && l.isActionable);
+        const taxonomy = S().taxonomy || { Reactive: [], Strategic: [] };
+
+        // Card 1: Strategy Ratio
+        let totalMins = 0, strategicMins = 0;
+        actionable.forEach(l => {
+            const m = parseInt(l.estMinutes) || 0;
+            totalMins += m;
+            if (l.workType === 'strategic') strategicMins += m;
+        });
+        const pct = totalMins > 0 ? Math.round((strategicMins / totalMins) * 100) : 0;
+        const card1 = el('div', { className: 'dash-card' });
+        card1.appendChild(el('h4', {}, 'Strategy Ratio'));
+        card1.appendChild(el('div', { className: 'dash-metric', style: { color: pct > 60 ? 'var(--color-success)' : pct > 30 ? 'var(--color-warning)' : 'var(--color-danger)' } }, `${pct}%`));
+        card1.appendChild(el('div', { className: 'dash-sub' }, `${Math.round(strategicMins / 60)}h strategic / ${Math.round(totalMins / 60)}h total estimated`));
+        grid.appendChild(card1);
+
+        // Card 2: Estimation Accuracy
+        const completed = actionable.filter(l => (l.actualMinutes || 0) > 0 && (l.estMinutes || 0) > 0);
+        let avgDelta = 0;
+        if (completed.length > 0) {
+            const totalDelta = completed.reduce((sum, l) => sum + Math.abs((l.actualMinutes || 0) - (l.estMinutes || 0)), 0);
+            avgDelta = Math.round(totalDelta / completed.length);
+        }
+        const card2 = el('div', { className: 'dash-card' });
+        card2.appendChild(el('h4', {}, 'Estimation Accuracy'));
+        card2.appendChild(el('div', { className: 'dash-metric' }, completed.length > 0 ? `±${avgDelta}m` : '—'));
+        card2.appendChild(el('div', { className: 'dash-sub' }, `Avg delta across ${completed.length} completed items`));
+        grid.appendChild(card2);
+
+        // Card 3: Friction Log (bump reasons)
+        const bumpReasons = {};
+        links.forEach(l => {
+            if (!l || !l.bumpLog) return;
+            l.bumpLog.forEach(b => { bumpReasons[b.reason] = (bumpReasons[b.reason] || 0) + 1; });
+        });
+        const sortedReasons = Object.entries(bumpReasons).sort((a, b) => b[1] - a[1]);
+        const totalBumps = sortedReasons.reduce((s, r) => s + r[1], 0);
+        const card3 = el('div', { className: 'dash-card' });
+        card3.appendChild(el('h4', {}, 'Friction Log'));
+        if (sortedReasons.length === 0) {
+            card3.appendChild(el('div', { className: 'dash-sub' }, 'No bumps recorded yet.'));
+        } else {
+            sortedReasons.slice(0, 5).forEach(([reason, count]) => {
+                const row = el('div', { className: 'dash-bar-row' });
+                row.appendChild(el('span', { className: 'dash-bar-label' }, reason));
+                const track = el('div', { className: 'dash-bar-track' });
+                track.appendChild(el('div', { className: 'dash-bar-fill', style: { width: `${Math.round(count / totalBumps * 100)}%`, background: 'var(--color-warning)' } }));
+                row.appendChild(track);
+                row.appendChild(el('span', { className: 'dash-bar-value' }, String(count)));
+                card3.appendChild(row);
+            });
+        }
+        grid.appendChild(card3);
+
+        // Card 4: Taxonomy Breakdown
+        const tagMins = {};
+        actionable.forEach(l => {
+            const tag = l.subTag || l.workType || 'Untagged';
+            tagMins[tag] = (tagMins[tag] || 0) + (parseInt(l.estMinutes) || 0);
+        });
+        const sortedTags = Object.entries(tagMins).sort((a, b) => b[1] - a[1]);
+        const maxTagMins = sortedTags.length > 0 ? sortedTags[0][1] : 1;
+        const card4 = el('div', { className: 'dash-card' });
+        card4.appendChild(el('h4', {}, 'Taxonomy Breakdown'));
+        if (sortedTags.length === 0) {
+            card4.appendChild(el('div', { className: 'dash-sub' }, 'No actionable items yet.'));
+        } else {
+            sortedTags.forEach(([tag, mins]) => {
+                const row = el('div', { className: 'dash-bar-row' });
+                row.appendChild(el('span', { className: 'dash-bar-label' }, tag));
+                const track = el('div', { className: 'dash-bar-track' });
+                const color = tag.toLowerCase().includes('strategic') || tag === 'strategic' ? 'var(--color-success)' : 'var(--color-primary)';
+                track.appendChild(el('div', { className: 'dash-bar-fill', style: { width: `${Math.round(mins / maxTagMins * 100)}%`, background: color } }));
+                row.appendChild(track);
+                row.appendChild(el('span', { className: 'dash-bar-value' }, `${(mins / 60).toFixed(1)}h`));
+                card4.appendChild(row);
+            });
+        }
+        grid.appendChild(card4);
+
+        // Card 5: Focus Session Stats
+        const today = new Date().toLocaleDateString();
+        const weekAgo = new Date(Date.now() - 7 * 86400000);
+        const recentLogs = (S().pomoLogs || []).filter(l => l && new Date(l.date) >= weekAgo);
+        const totalFocus = recentLogs.reduce((s, l) => s + (l.minutes || 0), 0);
+        const successRate = recentLogs.length > 0 ? Math.round(recentLogs.filter(l => l.outcome === 'Success').length / recentLogs.length * 100) : 0;
+        const card5 = el('div', { className: 'dash-card' });
+        card5.appendChild(el('h4', {}, '7-Day Focus'));
+        card5.appendChild(el('div', { className: 'dash-metric' }, `${Math.round(totalFocus / 60)}h`));
+        card5.appendChild(el('div', { className: 'dash-sub' }, `${recentLogs.length} sessions, ${successRate}% success rate`));
+        grid.appendChild(card5);
+    }
+
+    // ============================================================
+    // EPIC 6: PRIVACY-SAFE LLM EXPORT
+    // ============================================================
+
+    function exportLlmDiagnostics() {
+        if (!appState) return;
+
+        // GEMINI_LOGIC: Deep copy, strip PII, keep metadata
+        const sanitized = JSON.parse(JSON.stringify(appState));
+
+        // Strip link-level PII
+        (sanitized.links || []).forEach(link => {
+            link.name = `[CASE-${link.caseKey || link.id}]`;
+            link.description = '';
+            link.customIcon = '';
+            link.resources = (link.resources || []).map(() => ({ title: '[REDACTED]', url: '[REDACTED]' }));
+            // Taxonomy sub-tags could contain confidential project/client names
+            if (link.subTag) link.subTag = `[TAG-${link.workType || 'unknown'}]`;
+            (link.subtasks || []).forEach(st => { st.title = `[SUBTASK-${st.id}]`; });
+            (link.activityLog || []).forEach(entry => { entry.content = `[${entry.type}]`; });
+            // bumpLog reasons are from fixed dropdowns but future-proof
+            (link.bumpLog || []).forEach(b => { b.reason = b.reason.replace(/^[^🚒⏳🔋📅]*/, '').trim() || '[BUMP]'; });
+        });
+
+        // Strip notes content
+        (sanitized.notes || []).forEach(note => {
+            note.title = `[NOTE-${note.id}]`;
+            note.text = '';
+        });
+
+        // Strip pomo task names
+        (sanitized.pomoLogs || []).forEach(log => {
+            log.task = `[SESSION]`;
+        });
+
+        // Strip YouTube links
+        sanitized.ytLinks = [];
+
+        // Strip user preferences that might contain PII
+        sanitized.preferences = {};
+
+        // Remove clock labels
+        (sanitized.clocks || []).forEach(c => { c.label = '[TZ]'; });
+
+        // Remove category names but keep count
+        sanitized.categories = sanitized.categories.map((c, i) => `[BUCKET-${i}]`);
+        sanitized.bucketIcons = {};
+
+        // Strip taxonomy custom labels (could contain company-specific terms)
+        if (sanitized.taxonomy) {
+            sanitized.taxonomy = {
+                Reactive: (sanitized.taxonomy.Reactive || []).map((_, i) => `[R-TAG-${i}]`),
+                Strategic: (sanitized.taxonomy.Strategic || []).map((_, i) => `[S-TAG-${i}]`),
+            };
+        }
+
+        // Clean bucketSizes keys (they contain bucket names)
+        const cleanedSizes = {};
+        Object.keys(sanitized.bucketSizes || {}).forEach((key, i) => {
+            cleanedSizes[`[BUCKET-${i}]`] = sanitized.bucketSizes[key];
+        });
+        sanitized.bucketSizes = cleanedSizes;
+
+        const blob = new Blob([JSON.stringify(sanitized, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `sidekick-llm-diagnostics-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        debugLog('Exported LLM diagnostics (PII stripped)');
+    }
+
+    $('btnLlmExport').addEventListener('click', exportLlmDiagnostics);
+
+    // ============================================================
+    // EXPORT / IMPORT
+    // ============================================================
+
+    async function exportData() {
+        if (!AuthManager.isLoggedIn() || !appState) return;
+        const blob = new Blob([JSON.stringify(appState, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `productivity-sidekick-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        debugLog('Exported backup');
+    }
+
+    function importData(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = JSON.parse(e.target.result);
+                // Validate structure
+                if (!data.categories || !Array.isArray(data.categories)) {
+                    alert('Invalid backup file: missing categories.');
+                    return;
+                }
+                if (!data.links || !Array.isArray(data.links)) {
+                    alert('Invalid backup file: missing links.');
+                    return;
+                }
+                // Sanitize links — reject any with unsafe URL schemes
+                data.links = data.links.filter(l => l && isUrlSafe(l.url));
+
+                if (confirm('This will replace all your current data. Continue?')) {
+                    // Merge with default state to fill any missing keys
+                    const defaults = AuthManager.getDefaultAppState();
+                    appState = { ...defaults, ...data, schemaVersion: defaults.schemaVersion };
+                    persistState();
+                    renderBuckets();
+                    renderSidebar();
+                    debugLog('Imported backup');
+                }
+            } catch (err) {
+                alert('Failed to parse backup file: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = ''; // reset so same file can be re-imported
+    }
+
+    // ============================================================
+    // EPIC 14: VIEW TOGGLE
+    // ============================================================
+
+    function setView(view) {
+        currentView = view;
+        $('btnViewLibrary').classList.toggle('active', view === 'library');
+        $('btnViewWorkspace').classList.toggle('active', view === 'workspace');
+        // Hide maturity meter + productivity toolbar buttons in library mode
+        $('maturityMeterContainer').style.display = view === 'library' ? 'none' : 'flex';
+        $('btnMaintenance').style.display = view === 'library' ? 'none' : '';
+        $('btnArchive').style.display = view === 'library' ? 'none' : '';
+        // Update quick capture placeholder
+        const qc = $('quickCaptureInput');
+        if (qc) qc.placeholder = view === 'library'
+            ? '📚 Paste a URL to save a bookmark...'
+            : '⚡ Paste a URL or type a title and press Enter...';
+        renderSidebar();
+        renderBuckets();
+    }
+
+    $('btnViewLibrary').addEventListener('click', () => setView('library'));
+    $('btnViewWorkspace').addEventListener('click', () => setView('workspace'));
+
+    // ============================================================
+    // TOOLBAR WIRING
+    // ============================================================
+
+    $('btnAddBucket').addEventListener('click', () => openBucketModal());
+
+    $('btnAddCase').addEventListener('click', () => {
+        if (S().categories.length === 0) { alert('Please add a bucket first.'); return; }
+        openLinkModal(S().categories[0]);
+    });
+
+    // Epic 4: Maintenance Mode toggle
+    $('btnMaintenance').addEventListener('click', () => {
+        S().isMaintenanceMode = !S().isMaintenanceMode;
+        const btn = $('btnMaintenance');
+        if (S().isMaintenanceMode) {
+            btn.classList.add('active');
+            btn.textContent = '🔧 Maintenance ON';
+        } else {
+            btn.classList.remove('active');
+            btn.textContent = '🔧 Maintenance';
+        }
+        persistState();
+        renderBuckets();
+    });
+
+    // Epic 12: Archive toggle — show/hide completed items
+    $('btnArchive').addEventListener('click', () => {
+        showArchive = !showArchive;
+        const btn = $('btnArchive');
+        btn.classList.toggle('active', showArchive);
+        btn.textContent = showArchive ? '👁️ Archive ON' : '👁️ Archive';
+        renderBuckets();
+    });
+
+    // ============================================================
+    // EPIC 21: FEEDBACK ENGINE
+    // ============================================================
+
+    $('btnFeedback').addEventListener('click', () => {
+        $('feedbackType').selectedIndex = 0;
+        $('feedbackMessage').value = '';
+        $('feedbackForm').style.display = 'flex';
+        $('feedbackSuccess').style.display = 'none';
+        $('feedbackSubmitBtn').disabled = false;
+        $('feedbackModal').showModal();
+    });
+
+    $('feedbackModalClose').addEventListener('click', () => $('feedbackModal').close());
+
+    // GEMINI_LOGIC: Submit feedback to /api/feedback (Workers endpoint)
+    $('feedbackSubmitBtn').addEventListener('click', async () => {
+        const type = $('feedbackType').value;
+        const message = $('feedbackMessage').value.trim();
+        if (!message) { alert('Please enter a message.'); return; }
+
+        $('feedbackSubmitBtn').disabled = true;
+        $('feedbackSubmitBtn').textContent = 'Sending...';
+
+        const session = AuthManager.getSession();
+        const payload = {
+            type,
+            message,
+            email: session?.email || 'anonymous',
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent,
+        };
+
+        try {
+            await fetch('/api/feedback', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+        } catch {
+            // Silent fail — feedback endpoint may not exist yet locally
+            debugLog('Feedback POST failed (endpoint may not be deployed yet)');
+        }
+
+        // Show success regardless — we don't want to block UX on endpoint availability
+        $('feedbackForm').style.display = 'none';
+        $('feedbackSuccess').style.display = 'block';
+        debugLog(`Feedback submitted: [${type}] ${message.substring(0, 50)}...`);
+        setTimeout(() => $('feedbackModal').close(), 1500);
+    });
+
+    $('btnAutoOrganize').addEventListener('click', () => {
+        const board = $('bucketBoard');
+        const buckets = Array.from(board.querySelectorAll('.category'));
+        if (buckets.length === 0) return;
+        const boardWidth = board.clientWidth - 20;
+        let currentX = 0, currentY = 0, rowMaxHeight = 0;
+        buckets.forEach(bEl => {
+            bEl.classList.add('animating');
+            let w = Math.ceil(bEl.offsetWidth / 20) * 20;
+            let h = Math.ceil(bEl.offsetHeight / 20) * 20;
+            if (currentX + w > boardWidth && currentX > 0) { currentX = 0; currentY += rowMaxHeight + 20; rowMaxHeight = 0; }
+            bEl.style.left = currentX + 'px';
+            bEl.style.top = currentY + 'px';
+            const id = bEl.dataset.id;
+            if (!S().bucketSizes[id]) S().bucketSizes[id] = {};
+            S().bucketSizes[id].x = currentX;
+            S().bucketSizes[id].y = currentY;
+            currentX += w + 20;
+            rowMaxHeight = Math.max(rowMaxHeight, h);
+            setTimeout(() => bEl.classList.remove('animating'), 400);
+        });
+        persistState();
+    });
+
+    $('btnConfigDropdown').addEventListener('click', () => {
+        $('configDropdown').classList.toggle('show');
+        if ($('configDropdown').classList.contains('show')) renderToolOrderList();
+    });
+
+    window.addEventListener('click', (event) => {
+        if (!event.target.matches('#btnConfigDropdown') && !event.target.closest('#btnConfigDropdown')) {
+            const dd = $('configDropdown');
+            if (dd.classList.contains('show') && !dd.contains(event.target)) dd.classList.remove('show');
+        }
+    });
+
+    $('btnExport').addEventListener('click', exportData);
+    $('btnImportTrigger').addEventListener('click', () => $('importFile').click());
+    $('importFile').addEventListener('change', importData);
+
+    // Epic 17: Browser Bookmark HTML Importer
+    $('btnImportBookmarks').addEventListener('click', () => $('importBookmarksFile').click());
+    $('importBookmarksFile').addEventListener('change', (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                // GEMINI_LOGIC: Parse Netscape Bookmark HTML using DOMParser
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(e.target.result, 'text/html');
+                const anchors = doc.querySelectorAll('a[href]');
+                let imported = 0;
+
+                // Ensure "Imported" bucket exists
+                if (!S().categories.includes('Imported')) {
+                    S().categories.push('Imported');
+                    S().bucketSizes['cat-Imported'] = { x: 40, y: 40 };
+                    S().bucketIcons['cat-Imported'] = '🌐';
+                }
+
+                anchors.forEach(a => {
+                    const url = a.getAttribute('href');
+                    const title = a.textContent.trim();
+                    if (!url || !title) return;
+                    if (!isUrlSafe(url)) return;
+                    S().links.push({
+                        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                        caseKey: '', name: title, description: '',
+                        category: 'Imported', customIcon: '',
+                        isActionable: false, isCompleted: false,
+                        workType: '', subTag: '', estMinutes: 0, source: '',
+                        priority: '', dueDate: '',
+                        resources: [{ title: '', url: url }],
+                        subtasks: [], activityLog: [],
+                        bumpCount: 0, bumpLog: [], actualMinutes: 0,
+                    });
+                    imported++;
+                });
+
+                persistState();
+                renderBuckets();
+                alert(`Successfully imported ${imported} bookmarks into the "Imported" bucket.`);
+                debugLog(`Imported ${imported} browser bookmarks`);
+            } catch (err) {
+                alert('Failed to parse bookmark file: ' + err.message);
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+    });
+
+    $('btnToggleDebug').addEventListener('click', () => {
+        isDebugMode = !isDebugMode;
+        const lbl = $('debugStatusLabel');
+        const dlBtn = $('btnDownloadLog');
+        if (isDebugMode) {
+            lbl.textContent = 'ON'; lbl.style.color = 'var(--color-primary)';
+            dlBtn.classList.remove('hidden');
+            debugLog('Debug mode activated.');
+        } else {
+            lbl.textContent = 'OFF'; lbl.style.color = 'var(--color-text-muted)';
+            dlBtn.classList.add('hidden');
+        }
+    });
+
+    $('btnDownloadLog').addEventListener('click', () => {
+        const blob = new Blob([debugLogs.join('\n')], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'sidekick_debug.txt'; a.click();
+        URL.revokeObjectURL(url);
+    });
+
+    $('btnResetLayout').addEventListener('click', () => {
+        if (confirm('This will snap all lists back into a clean stack. Continue?')) {
+            S().categories.forEach((cat, index) => {
+                const id = 'cat-' + cat;
+                if (!S().bucketSizes[id]) S().bucketSizes[id] = {};
+                S().bucketSizes[id].x = (index % 3) * 340;
+                S().bucketSizes[id].y = Math.floor(index / 3) * 200;
+            });
+            persistState();
+            renderBuckets();
+        }
+    });
+
+    $('btnLogout').addEventListener('click', () => {
+        if (confirm('Sign out? Your data is saved in your encrypted vault.')) {
+            exitApp();
+        }
+    });
+
+    $('noteModalClose').addEventListener('click', () => $('noteModal').close());
+
+    // Volume handler delegation
+    document.addEventListener('input', (e) => {
+        if (e.target.id === 'noiseVol' && noiseGain) {
+            noiseGain.gain.value = parseFloat(e.target.value);
+        }
+    });
+
+    // ============================================================
+    // APP INIT
+    // ============================================================
+
+    function initApp() {
+        populateEmojiGrid('urlEmojiGrid', 'linkModalIcon');
+        populateEmojiGrid('bucketEmojiGrid', 'bucketModalIcon');
+        debugLog('App initialized');
+
+        // Schema migration: v1 → v2
+        if (!S().schemaVersion || S().schemaVersion < 2) {
+            debugLog('Migrating schema v1 → v2');
+            (S().links || []).forEach(link => {
+                if (!link) return;
+                if (!link.workType) link.workType = 'reactive';
+                if (!link.estMinutes) link.estMinutes = 0;
+                if (!link.source) link.source = '';
+                if (link.bumpCount === undefined) link.bumpCount = 0;
+                if (!link.bumpLog) link.bumpLog = [];
+                if (!link.actualMinutes) link.actualMinutes = 0;
+            });
+            if (S().isMaintenanceMode === undefined) S().isMaintenanceMode = false;
+            S().schemaVersion = 2;
+        }
+
+        // Schema migration: v2 → v3
+        if (S().schemaVersion < 3) {
+            debugLog('Migrating schema v2 → v3');
+            (S().links || []).forEach(link => {
+                if (!link) return;
+                // Migrate single url → resources[]
+                if (!link.resources) {
+                    link.resources = link.url ? [{ title: '', url: link.url }] : [];
+                }
+                // Add new fields
+                if (link.isActionable === undefined) {
+                    // Heuristic: items with workType or estMinutes set were effectively actionable
+                    link.isActionable = !!(link.workType || link.estMinutes);
+                }
+                if (!link.subtasks) link.subtasks = [];
+                if (!link.activityLog) link.activityLog = [];
+                if (!link.caseKey) link.caseKey = '';
+            });
+            if (!S().dailyCounter) S().dailyCounter = { date: '', count: 0 };
+            S().schemaVersion = 3;
+        }
+
+        // Schema migration: v3 → v4
+        if (S().schemaVersion < 4) {
+            debugLog('Migrating schema v3 → v4');
+            if (!S().taxonomy) {
+                S().taxonomy = {
+                    Reactive: ['Product Defect', 'Customer Escalation', 'Slack Request'],
+                    Strategic: ['Planned', 'Project', 'Self-Improvement'],
+                };
+            }
+            (S().links || []).forEach(link => {
+                if (!link) return;
+                if (!link.subTag) link.subTag = '';
+            });
+            S().schemaVersion = 4;
+        }
+
+        // Schema migration: v4 → v5
+        if (S().schemaVersion < 5) {
+            debugLog('Migrating schema v4 → v5');
+            (S().links || []).forEach(link => {
+                if (!link) return;
+                if (link.isCompleted === undefined) link.isCompleted = false;
+                if (!link.priority) link.priority = '';
+                if (!link.dueDate) link.dueDate = '';
+            });
+            S().schemaVersion = 5;
+        }
+
+        // Ensure default data
+        if (!S().categories) S().categories = ['My Links'];
+        if (!S().links) S().links = [];
+        if (!S().clocks) S().clocks = [{ label: 'My Time', tz: 'Local' }];
+        if (!S().notes) S().notes = [];
+        if (!S().pomoLogs) S().pomoLogs = [];
+        if (!S().bucketSizes) S().bucketSizes = {};
+        if (!S().bucketIcons) S().bucketIcons = {};
+        if (!S().sidebarOrder) S().sidebarOrder = ['focus_review', 'audio', 'notes', 'clocks', 'cost'];
+        if (!S().ytLinks) S().ytLinks = [{ title: 'Lofi Girl (Live)', videoId: 'jfKfPfyJRdk', listId: null }];
+        if (S().currentYtIndex === undefined) S().currentYtIndex = 0;
+
+        // Ensure Backlog bucket exists
+        if (!S().categories.includes('Backlog')) {
+            S().categories.push('Backlog');
+            S().bucketSizes['cat-Backlog'] = { x: 340, y: 0 };
+            S().bucketIcons['cat-Backlog'] = '📦';
+        }
+
+        // Initialize bucket positions
+        S().categories.forEach((cat, index) => {
+            const id = 'cat-' + cat;
+            if (!S().bucketSizes[id]) S().bucketSizes[id] = {};
+            let x = parseInt(S().bucketSizes[id].x);
+            let y = parseInt(S().bucketSizes[id].y);
+            if (isNaN(x) || x < 0) S().bucketSizes[id].x = (index % 3) * 340;
+            if (isNaN(y) || y < 0) S().bucketSizes[id].y = Math.floor(index / 3) * 200;
+        });
+
+        // Restore maintenance mode button state
+        if (S().isMaintenanceMode) {
+            const btn = $('btnMaintenance');
+            if (btn) { btn.classList.add('active'); btn.textContent = '🔧 Maintenance ON'; }
+        }
+
+        renderSidebar();
+        renderBuckets();
+        setInterval(updateTime, 1000);
+
+        // Epic 6: Responsive bucket snap-back on window resize
+        let resizeTimer = null;
+        window.addEventListener('resize', () => {
+            if (resizeTimer) clearTimeout(resizeTimer);
+            resizeTimer = setTimeout(() => {
+                const board = $('bucketBoard');
+                if (!board) return;
+                const boardWidth = board.clientWidth;
+                let changed = false;
+                board.querySelectorAll('.category').forEach(bEl => {
+                    const left = parseInt(bEl.style.left) || 0;
+                    if (left + 100 > boardWidth) {
+                        const newLeft = Math.max(0, boardWidth - bEl.offsetWidth - 20);
+                        bEl.style.left = newLeft + 'px';
+                        const id = bEl.dataset.id;
+                        if (S().bucketSizes[id]) { S().bucketSizes[id].x = newLeft; changed = true; }
+                    }
+                });
+                if (changed) persistState();
+            }, 300);
+        });
+
+        debugLog('Boot complete');
+    }
+
+})();
+</script>
+</body>
+</html>
