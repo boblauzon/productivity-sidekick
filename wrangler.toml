@@ -41,3 +41,7 @@ database_id = "ac8607f9-9f58-4800-9a19-a0efd44d946e"
 
 [env.preview.vars]
 SESSION_SECRET = "PREVIEW-PLACEHOLDER-REPLACE-IN-DASHBOARD"
+[[env.preview.d1_databases]]
+binding = "DB"
+database_name = "sidekick-db"
+database_id = "ac8607f9-9f58-4800-9a19-a0efd44d946e"
