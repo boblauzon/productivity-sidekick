@@ -27,10 +27,13 @@ import {
   type ReactNode,
 } from 'react';
 import { createBrowserBridge } from './lib/cryptoBridge';
-import type { Task, Resource, FocusSession, UiPrefs } from './lib/types';
+import type { Task, Resource, UiPrefs } from './lib/types';
 import type { AuthSession } from './lib/authClient';
-import { BridgeProvider, useBridgeQuery, useBridge } from './hooks/useCryptoBridge';
+import { loadVault } from './lib/authClient';
+import { mapVault } from './lib/vaultMapper';
+import { BridgeProvider, useBridge } from './hooks/useCryptoBridge';
 import { AuthScreen } from './components/AuthScreen';
+import { SettingsModal } from './components/SettingsModal';
 import { TaskCard } from './components/TaskCard';
 import { TaskExpansionDrawer } from './components/TaskExpansionDrawer';
 import { EnhancedBookmarkHub } from './components/EnhancedBookmarkHub';
@@ -43,29 +46,78 @@ const bridge = createBrowserBridge();
 
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
-  const handleLogout = useCallback(() => setSession(null), []);
+  const [vaultData, setVaultData] = useState<{ tasks: Task[]; resources: Resource[] }>({ tasks: [], resources: [] });
+  const [loadingVault, setLoadingVault] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const handleLogout = useCallback(() => {
+    setSession(null);
+    setVaultData({ tasks: [], resources: [] });
+  }, []);
+
+  const handleAuthenticated = useCallback(async (s: AuthSession) => {
+    setSession(s);
+    setLoadingVault(true);
+    try {
+      const raw = await loadVault(s);
+      setVaultData(raw ? mapVault(raw) : { tasks: [], resources: [] });
+    } catch {
+      setVaultData({ tasks: [], resources: [] });
+    } finally {
+      setLoadingVault(false);
+    }
+  }, []);
 
   if (!session) {
-    return <AuthScreen onAuthenticated={setSession} />;
+    return <AuthScreen onAuthenticated={handleAuthenticated} />;
+  }
+
+  if (loadingVault) {
+    return (
+      <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
+        <div className="flex items-center gap-3 text-zinc-400">
+          <span className="w-5 h-5 rounded-full border-2 border-zinc-700 border-t-violet-400 animate-spin" />
+          <span className="text-sm">Decrypting vault…</span>
+        </div>
+      </div>
+    );
   }
 
   return (
     <BridgeProvider bridge={bridge}>
-      <Shell session={session} onLogout={handleLogout} />
+      <Shell
+        session={session}
+        onLogout={handleLogout}
+        tasks={vaultData.tasks}
+        resources={vaultData.resources}
+        onShowSettings={() => setSettingsOpen(true)}
+      />
+      {settingsOpen && (
+        <SettingsModal
+          session={session}
+          onClose={() => setSettingsOpen(false)}
+          onLogout={handleLogout}
+        />
+      )}
     </BridgeProvider>
   );
 }
 
 // ─── Shell ─────────────────────────────────────────────────────────────────────
 
-function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => void }) {
+function Shell({
+  session, onLogout, tasks, resources, onShowSettings,
+}: {
+  session: AuthSession;
+  onLogout: () => void;
+  tasks: Task[];
+  resources: Resource[];
+  onShowSettings: () => void;
+}) {
   const [view, setView] = useState<View>('focus');
   const [drawerTaskId, setDrawerTaskId] = useState<string | null>(null);
   const [theatreTaskId, setTheatreTaskId] = useState<string | null>(null);
 
-  // UI prefs are non-secret, but for the staging cut we keep them in React
-  // state only (no localStorage, per the zero-knowledge posture). A future
-  // ticket can persist them via the bridge as encrypted records.
   const [ui, setUi] = useState<UiPrefs>({
     theme: 'dark',
     workspaceProfile: 'simplistic',
@@ -75,31 +127,10 @@ function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => vo
     distractorOptions: [],
   });
 
-  // Live data — re-fetched whenever the bridge broadcasts on the matching channel.
-  // Empty arrays are the safe default until the worker resolves.
-  const tasksQuery = useBridgeQuery<{ kind: 'task.list' }, Task[]>(
-    'tasks',
-    useCallback(() => ({ kind: 'task.list' }), []),
-  );
-  const resourcesQuery = useBridgeQuery<{ kind: 'resource.list' }, Resource[]>(
-    'resources',
-    useCallback(() => ({ kind: 'resource.list' }), []),
-  );
-  const sessionsQuery = useBridgeQuery<{ kind: 'sessions.list' }, FocusSession[]>(
-    'sessions',
-    useCallback(() => ({ kind: 'sessions.list' }), []),
-  );
-
-  const tasks = tasksQuery.data ?? [];
-  const resources = resourcesQuery.data ?? [];
-  // sessions reserved for the focus theatre view, currently a stub.
-  void sessionsQuery;
-
-  // Apply theme as an html-class (no inline style mutation across components)
+  // Ensure the dark class is set on mount.
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.toggle('dark', ui.theme === 'dark');
-  }, [ui.theme]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
   // Focus-start event from the drawer or task card. Not a bridge concern —
   // it's pure UI routing into the theatre view.
@@ -132,14 +163,10 @@ function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => vo
     return Array.from(set);
   }, [resources]);
 
-  const toggleTheme = useCallback(() => {
-    setUi((p) => ({ ...p, theme: p.theme === 'dark' ? 'light' : 'dark' }));
-  }, []);
-
   return (
     <div className="w-screen h-screen overflow-hidden flex bg-zinc-950 text-zinc-200">
       {ui.toolbarPosition === 'left' && (
-        <IconRail view={view} onView={setView} theme={ui.theme} onToggleTheme={toggleTheme} email={session.email} onLogout={onLogout} />
+        <IconRail view={view} onView={setView} email={session.email} onLogout={onLogout} onShowSettings={onShowSettings} />
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
@@ -148,8 +175,8 @@ function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => vo
         {view === 'dashboard' && (
           <Dashboard
             activeTasks={activeTasks}
-            loading={tasksQuery.loading}
-            error={tasksQuery.error}
+            loading={false}
+            error={null}
             workspaceProfile={ui.workspaceProfile}
             onOpenTask={onOpenTask}
             onStartFocus={onStartFocus}
@@ -160,7 +187,7 @@ function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => vo
         {view === 'focus' && (
           <FocusOverview
             activeTasks={activeTasks}
-            loading={tasksQuery.loading}
+            loading={false}
             onOpenTask={onOpenTask}
             onStartFocus={onStartFocus}
           />
@@ -221,14 +248,13 @@ function TopBar({ view }: { view: View }) {
 }
 
 function IconRail({
-  view, onView, theme, onToggleTheme, email, onLogout,
+  view, onView, email, onLogout, onShowSettings,
 }: {
   view: View;
   onView: (v: View) => void;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
   email: string;
   onLogout: () => void;
+  onShowSettings: () => void;
 }) {
   const items: { id: View; icon: string; label: string }[] = [
     { id: 'dashboard', icon: 'layout-grid', label: 'Dashboard' },
@@ -262,12 +288,12 @@ function IconRail({
       <div className="flex-1" />
       <button
         type="button"
-        onClick={onToggleTheme}
-        title={`Toggle theme (now ${theme})`}
-        aria-label={`Toggle theme — currently ${theme}`}
+        onClick={onShowSettings}
+        title="Settings"
+        aria-label="Open settings"
         className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-200 active:scale-95"
       >
-        <Icon name={theme === 'dark' ? 'moon' : 'sun'} className="w-[18px] h-[18px]" />
+        <Icon name="settings" className="w-[18px] h-[18px]" />
       </button>
       <button
         type="button"

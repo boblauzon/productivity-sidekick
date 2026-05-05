@@ -3,7 +3,7 @@
 // Crypto operations run on the main thread for the staging build; the
 // production worker migration will move key material inside the enclave.
 
-import { deriveKeys, generateRecoveryKit, recoverEncKey } from './crypto';
+import { deriveKeys, generateRecoveryKit, recoverEncKey, decryptVault } from './crypto';
 import type { RecoveryBlob } from './crypto';
 
 export interface AuthSession {
@@ -81,6 +81,12 @@ export async function register(
     },
     recoveryKey,
   };
+}
+
+export async function loadVault(session: AuthSession): Promise<unknown | null> {
+  const result = await apiFetch('/vault', { token: session.token });
+  if (!result.vault) return null;
+  return decryptVault(session.encKey, result.vault as { ciphertext: string; iv: string });
 }
 
 export async function recoverAccount(
