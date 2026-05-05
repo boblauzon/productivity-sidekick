@@ -28,7 +28,13 @@ async function apiFetch(
     body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
   });
 
-  const data = (await resp.json()) as Record<string, unknown>;
+  let data: Record<string, unknown>;
+  try {
+    data = (await resp.json()) as Record<string, unknown>;
+  } catch {
+    // Non-JSON body — likely a 404 HTML page or empty response from a misconfigured route.
+    throw new Error(`Server error (${resp.status} ${resp.statusText || 'No response'}). Check that the API function is deployed.`);
+  }
   if (!resp.ok) throw new Error((data.error as string | undefined) ?? `Request failed (${resp.status})`);
   return data;
 }
