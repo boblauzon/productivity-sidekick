@@ -23,15 +23,16 @@
 //   or resources. This is the test for "no mock data leaked through."
 
 import {
-  useCallback, useEffect, useMemo, useState,
+  useCallback, useEffect, useMemo, useRef, useState,
   type ReactNode,
 } from 'react';
-import { createBrowserBridge } from './lib/cryptoBridge';
+import type { CryptoBridge } from './lib/cryptoBridge';
 import type { Task, Resource, UiPrefs } from './lib/types';
 import type { AuthSession } from './lib/authClient';
-import { loadVault } from './lib/authClient';
+import { loadVault, saveVault } from './lib/authClient';
 import { mapVault } from './lib/vaultMapper';
-import { BridgeProvider, useBridge } from './hooks/useCryptoBridge';
+import { MainThreadCryptoBridge } from './lib/mainThreadBridge';
+import { BridgeProvider, useBridge, useBridgeQuery } from './hooks/useCryptoBridge';
 import { AuthScreen } from './components/AuthScreen';
 import { SettingsModal } from './components/SettingsModal';
 import { FocusTheatre } from './components/FocusTheatre';
@@ -42,27 +43,39 @@ import { Icon } from './components/Icon';
 
 type View = 'dashboard' | 'focus' | 'theatre' | 'success' | 'bookmarks';
 
-// Single bridge instance — created once at module scope so it survives Fast Refresh.
-const bridge = createBrowserBridge();
-
 export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
-  const [vaultData, setVaultData] = useState<{ tasks: Task[]; resources: Resource[] }>({ tasks: [], resources: [] });
+  const [bridge, setBridge] = useState<CryptoBridge | null>(null);
   const [loadingVault, setLoadingVault] = useState(false);
+  const vaultVersionRef = useRef(0);
 
   const handleLogout = useCallback(() => {
+    bridge?.dispose();
+    setBridge(null);
     setSession(null);
-    setVaultData({ tasks: [], resources: [] });
-  }, []);
+    vaultVersionRef.current = 0;
+  }, [bridge]);
 
   const handleAuthenticated = useCallback(async (s: AuthSession) => {
     setSession(s);
     setLoadingVault(true);
     try {
-      const raw = await loadVault(s);
-      setVaultData(raw ? mapVault(raw) : { tasks: [], resources: [] });
+      const { data, version } = await loadVault(s);
+      vaultVersionRef.current = version;
+      const { tasks, resources } = data ? mapVault(data) : { tasks: [], resources: [] };
+
+      const saveFn = async (vaultData: unknown) => {
+        const result = await saveVault(s, vaultData, vaultVersionRef.current);
+        vaultVersionRef.current = result.version;
+      };
+
+      setBridge(new MainThreadCryptoBridge(tasks, resources, saveFn));
     } catch {
-      setVaultData({ tasks: [], resources: [] });
+      const saveFn = async (vaultData: unknown) => {
+        const result = await saveVault(s, vaultData, vaultVersionRef.current);
+        vaultVersionRef.current = result.version;
+      };
+      setBridge(new MainThreadCryptoBridge([], [], saveFn));
     } finally {
       setLoadingVault(false);
     }
@@ -83,32 +96,32 @@ export default function App() {
     );
   }
 
+  if (!bridge) return null; // shouldn't reach here (loading spinner covers this)
+
   return (
     <BridgeProvider bridge={bridge}>
-      <Shell
-        session={session}
-        onLogout={handleLogout}
-        tasks={vaultData.tasks}
-        resources={vaultData.resources}
-      />
+      <Shell session={session} onLogout={handleLogout} />
     </BridgeProvider>
   );
 }
 
 // ─── Shell ─────────────────────────────────────────────────────────────────────
 
-function Shell({
-  session, onLogout, tasks, resources,
-}: {
-  session: AuthSession;
-  onLogout: () => void;
-  tasks: Task[];
-  resources: Resource[];
-}) {
+function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => void }) {
   const [view, setView] = useState<View>('focus');
   const [drawerTaskId, setDrawerTaskId] = useState<string | null>(null);
   const [theatreTaskId, setTheatreTaskId] = useState<string | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  // Live data via the MainThreadCryptoBridge — re-fetches on every broadcast.
+  const tasksQuery = useBridgeQuery<{ kind: 'task.list' }, Task[]>(
+    'tasks', useCallback(() => ({ kind: 'task.list' }), []),
+  );
+  const resourcesQuery = useBridgeQuery<{ kind: 'resource.list' }, Resource[]>(
+    'resources', useCallback(() => ({ kind: 'resource.list' }), []),
+  );
+  const tasks     = tasksQuery.data     ?? [];
+  const resources = resourcesQuery.data ?? [];
 
   const [ui, setUi] = useState<UiPrefs>({
     theme: 'dark',
@@ -182,8 +195,8 @@ function Shell({
         {view === 'dashboard' && (
           <Dashboard
             activeTasks={activeTasks}
-            loading={false}
-            error={null}
+            loading={tasksQuery.loading}
+            error={tasksQuery.error}
             workspaceProfile={ui.workspaceProfile}
             onOpenTask={onOpenTask}
             onStartFocus={onStartFocus}
@@ -194,7 +207,7 @@ function Shell({
         {view === 'focus' && (
           <FocusOverview
             activeTasks={activeTasks}
-            loading={false}
+            loading={tasksQuery.loading}
             onOpenTask={onOpenTask}
             onStartFocus={onStartFocus}
             focusDuration={ui.focusDuration}

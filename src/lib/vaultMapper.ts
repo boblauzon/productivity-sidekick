@@ -104,7 +104,25 @@ function mapLinkToResource(link: LegacyLink, url: string, now: number): Resource
   };
 }
 
+// V2 vault format — what the new TypeScript build writes on every save.
+export interface VaultV2 {
+  format: 'v2';
+  tasks: Task[];
+  resources: Resource[];
+}
+
+export function serializeVault(tasks: Task[], resources: Resource[]): VaultV2 {
+  return { format: 'v2', tasks, resources };
+}
+
 export function mapVault(raw: unknown): { tasks: Task[]; resources: Resource[] } {
+  // V2 format — pass through directly (written by this build)
+  const maybe = raw as { format?: string; tasks?: Task[]; resources?: Resource[] };
+  if (maybe?.format === 'v2') {
+    return { tasks: maybe.tasks ?? [], resources: maybe.resources ?? [] };
+  }
+
+  // Legacy v1.40 format (links[])
   const vault = raw as LegacyVault;
   const links = vault?.links ?? [];
   const tasks: Task[] = [];

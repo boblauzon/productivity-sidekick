@@ -145,6 +145,16 @@ export async function generateRecoveryKit(encKey: CryptoKey): Promise<RecoveryKi
   };
 }
 
+export async function encryptVault(
+  encKey: CryptoKey,
+  data: unknown,
+): Promise<{ ciphertext: string; iv: string }> {
+  const payload = enc(typeof data === 'string' ? data : JSON.stringify(data));
+  const iv = crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const cipherBuf = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, encKey, payload);
+  return { ciphertext: bufToBase64(cipherBuf), iv: bufToBase64(iv) };
+}
+
 export async function decryptVault(
   encKey: CryptoKey,
   vaultBlob: { ciphertext: string; iv: string },

@@ -3,7 +3,7 @@
 // Crypto operations run on the main thread for the staging build; the
 // production worker migration will move key material inside the enclave.
 
-import { deriveKeys, generateRecoveryKit, recoverEncKey, decryptVault } from './crypto';
+import { deriveKeys, generateRecoveryKit, recoverEncKey, decryptVault, encryptVault } from './crypto';
 import type { RecoveryBlob } from './crypto';
 
 export interface AuthSession {
@@ -83,10 +83,36 @@ export async function register(
   };
 }
 
-export async function loadVault(session: AuthSession): Promise<unknown | null> {
+export async function loadVault(
+  session: AuthSession,
+): Promise<{ data: unknown | null; version: number }> {
   const result = await apiFetch('/vault', { token: session.token });
-  if (!result.vault) return null;
-  return decryptVault(session.encKey, result.vault as { ciphertext: string; iv: string });
+  const version = (result.version as number) ?? 0;
+  if (!result.vault) return { data: null, version };
+  const data = await decryptVault(session.encKey, result.vault as { ciphertext: string; iv: string });
+  return { data, version };
+}
+
+export async function saveVaultBlob(
+  token: string,
+  vault: { ciphertext: string; iv: string },
+  expectedVersion: number,
+): Promise<{ version: number }> {
+  const result = await apiFetch('/vault', {
+    method: 'PUT',
+    token,
+    body: { vault, expectedVersion },
+  });
+  return { version: (result.version as number) ?? expectedVersion + 1 };
+}
+
+export async function saveVault(
+  session: AuthSession,
+  data: unknown,
+  expectedVersion: number,
+): Promise<{ version: number }> {
+  const vault = await encryptVault(session.encKey, data);
+  return saveVaultBlob(session.token, vault, expectedVersion);
 }
 
 export async function recoverAccount(
