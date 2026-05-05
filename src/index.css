@@ -1,3 +1,147 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ─── Global base ──────────────────────────────────────────────────────────── */
+html, body { background: #0a0a0a; }
+body {
+  font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  letter-spacing: -0.005em;
+}
+
+/* ─── Custom scrollbar ─────────────────────────────────────────────────────── */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb {
+  background: #27272a;
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+  background-clip: padding-box;
+  border: 2px solid transparent;
+}
+
+/* ─── Date input styling ───────────────────────────────────────────────────── */
+input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-toast { animation: toast-in 180ms ease-out; }
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade { animation: fade-in 180ms ease-out; }
+
+/* ─── Light theme overrides ────────────────────────────────────────────────────
+   Strategy: CSS class overrides on html:not(.dark) so components never need
+   dark: variants. Surfaces remap zinc-950/zinc-900 to warm stone neutrals;
+   text contrast is pushed to WCAG AA minimums.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+html:not(.dark) body { background: #f5f5f4; color: #18181b; }
+
+/* Surfaces */
+html:not(.dark) .bg-zinc-950                                     { background-color: #f5f5f4 !important; }
+html:not(.dark) .bg-zinc-950\/95,
+html:not(.dark) .bg-zinc-950\/80,
+html:not(.dark) .bg-zinc-950\/60,
+html:not(.dark) .bg-zinc-950\/40                                 { background-color: rgba(245,245,244,0.92) !important; }
+html:not(.dark) .bg-zinc-900,
+html:not(.dark) .bg-zinc-900\/95,
+html:not(.dark) .bg-zinc-900\/90,
+html:not(.dark) .bg-zinc-900\/80,
+html:not(.dark) .bg-zinc-900\/60,
+html:not(.dark) .bg-zinc-900\/40                                 { background-color: #ffffff !important; }
+html:not(.dark) .bg-zinc-800,
+html:not(.dark) .bg-zinc-800\/80,
+html:not(.dark) .bg-zinc-800\/70,
+html:not(.dark) .bg-zinc-800\/60,
+html:not(.dark) .bg-zinc-800\/50,
+html:not(.dark) .bg-zinc-800\/30,
+html:not(.dark) .bg-zinc-800\/20                                 { background-color: #f4f4f5 !important; }
+
+/* Borders */
+html:not(.dark) .border-zinc-800,
+html:not(.dark) .border-zinc-800\/80,
+html:not(.dark) .border-zinc-800\/60                             { border-color: #e7e5e4 !important; }
+html:not(.dark) .border-zinc-700,
+html:not(.dark) .border-zinc-700\/60,
+html:not(.dark) .border-zinc-700\/70                             { border-color: #d6d3d1 !important; }
+html:not(.dark) .divide-zinc-800 > * + *                         { border-color: #e7e5e4 !important; }
+
+/* Text */
+html:not(.dark) .text-zinc-50,
+html:not(.dark) .text-zinc-100                                   { color: #09090b !important; }
+html:not(.dark) .text-zinc-200                                   { color: #18181b !important; }
+html:not(.dark) .text-zinc-300                                   { color: #27272a !important; }
+html:not(.dark) .text-zinc-400                                   { color: #3f3f46 !important; }
+html:not(.dark) .text-zinc-500                                   { color: #52525b !important; }
+html:not(.dark) .text-zinc-600                                   { color: #71717a !important; }
+html:not(.dark) .text-zinc-700                                   { color: #a1a1aa !important; }
+
+/* Hovers */
+html:not(.dark) .hover\:bg-zinc-800:hover,
+html:not(.dark) .hover\:bg-zinc-900\/60:hover,
+html:not(.dark) .hover\:bg-zinc-900:hover                        { background-color: #f4f4f5 !important; }
+html:not(.dark) .hover\:bg-zinc-700:hover                        { background-color: #e7e5e4 !important; }
+html:not(.dark) .hover\:border-zinc-700:hover                    { border-color: #a8a29e !important; }
+html:not(.dark) .hover\:text-zinc-100:hover,
+html:not(.dark) .hover\:text-zinc-200:hover                      { color: #09090b !important; }
+
+/* Violet accent */
+html:not(.dark) .bg-violet-500\/10                               { background-color: rgba(124,58,237,0.10) !important; }
+html:not(.dark) .border-violet-500\/25,
+html:not(.dark) .border-violet-500\/30,
+html:not(.dark) .border-violet-500\/40                           { border-color: rgba(124,58,237,0.45) !important; }
+html:not(.dark) .text-violet-300,
+html:not(.dark) .text-violet-400                                 { color: #6d28d9 !important; }
+
+/* Energy tints */
+html:not(.dark) .bg-emerald-500\/10,
+html:not(.dark) .bg-emerald-500\/15                              { background-color: rgba(16,185,129,0.12) !important; }
+html:not(.dark) .text-emerald-300                                { color: #047857 !important; }
+html:not(.dark) .text-emerald-400                                { color: #059669 !important; }
+html:not(.dark) .border-emerald-500\/25,
+html:not(.dark) .border-emerald-500\/30                          { border-color: rgba(16,185,129,0.45) !important; }
+
+html:not(.dark) .bg-amber-500\/10                                { background-color: rgba(245,158,11,0.14) !important; }
+html:not(.dark) .text-amber-300                                  { color: #b45309 !important; }
+html:not(.dark) .text-amber-400                                  { color: #d97706 !important; }
+html:not(.dark) .border-amber-500\/25                            { border-color: rgba(245,158,11,0.5) !important; }
+
+html:not(.dark) .bg-sky-500\/10                                  { background-color: rgba(14,165,233,0.10) !important; }
+html:not(.dark) .text-sky-300                                    { color: #0369a1 !important; }
+html:not(.dark) .border-sky-500\/25                              { border-color: rgba(14,165,233,0.45) !important; }
+
+html:not(.dark) .bg-rose-500\/5,
+html:not(.dark) .bg-rose-500\/10                                 { background-color: rgba(244,63,94,0.08) !important; }
+html:not(.dark) .text-rose-300,
+html:not(.dark) .text-rose-400                                   { color: #be123c !important; }
+html:not(.dark) .border-rose-500\/20,
+html:not(.dark) .border-rose-500\/30                             { border-color: rgba(244,63,94,0.45) !important; }
+
+/* Shadows — softer on white */
+html:not(.dark) .shadow-2xl                                      { box-shadow: 0 8px 30px -8px rgba(15,15,25,0.10), 0 4px 12px -4px rgba(15,15,25,0.06) !important; }
+html:not(.dark) .shadow-lg                                       { box-shadow: 0 4px 12px -2px rgba(15,15,25,0.10) !important; }
+html:not(.dark) .shadow-violet-900\/40,
+html:not(.dark) .shadow-violet-900\/20                           { box-shadow: 0 8px 24px -8px rgba(124,58,237,0.45) !important; }
+
+/* Inputs */
+html:not(.dark) input, html:not(.dark) textarea                  { color: #18181b; }
+html:not(.dark) input::placeholder,
+html:not(.dark) textarea::placeholder                            { color: #71717a !important; }
+html:not(.dark) input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(0.2); }
+
+/* Inverted filter pills (bg-zinc-100 active state) */
+html:not(.dark) .bg-zinc-100                                     { background-color: #18181b !important; color: #fafafa !important; }
+html:not(.dark) .border-zinc-100                                 { border-color: #18181b !important; }

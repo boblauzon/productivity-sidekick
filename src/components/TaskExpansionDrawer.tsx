@@ -64,6 +64,12 @@ function DrawerInner({ task, allTasks, onClose }: { task: Task; allTasks: Task[]
   const [descDraft, setDescDraft] = useState(task.description ?? '');
   const [dateOpen, setDateOpen] = useState(false);
 
+  // Add sub-task form
+  const [showSubForm, setShowSubForm] = useState(false);
+  const [newSubTitle, setNewSubTitle] = useState('');
+  const [newSubDur, setNewSubDur] = useState('');
+  const [newSubDate, setNewSubDate] = useState('');
+
   const titleRef = useRef<HTMLInputElement>(null);
   const descRef  = useRef<HTMLTextAreaElement>(null);
   useEffect(() => { if (editingTitle) titleRef.current?.focus(); }, [editingTitle]);
@@ -107,18 +113,36 @@ function DrawerInner({ task, allTasks, onClose }: { task: Task; allTasks: Task[]
     }
     setEditingDesc(false);
   };
-  const setDueDate = (iso: string) => {
-    bridge.request({
-      kind: 'task.update',
-      id: task.id,
-      patch: { dueDate: iso || undefined },
-    }).catch(reportError);
-    setDateOpen(false);
-  };
+  // dateOpen kept in escape handler but not currently used for a popover
+  void dateOpen;
   const toggleSub = (subTaskId: string) =>
     bridge.request({ kind: 'subtask.toggle', taskId: task.id, subTaskId }).catch(reportError);
   const removeSub = (subTaskId: string) =>
     bridge.request({ kind: 'subtask.remove', taskId: task.id, subTaskId }).catch(reportError);
+
+  const updateSubDuration = (subTaskId: string, dur: number) => {
+    const patched = task.subTasks.map((s) =>
+      s.id === subTaskId ? { ...s, estimatedDuration: dur || undefined } : s,
+    );
+    bridge.request({ kind: 'task.update', id: task.id, patch: { subTasks: patched } }).catch(reportError);
+  };
+  const updateSubDate = (subTaskId: string, iso: string) => {
+    const patched = task.subTasks.map((s) =>
+      s.id === subTaskId ? { ...s, dueDate: iso || undefined } : s,
+    );
+    bridge.request({ kind: 'task.update', id: task.id, patch: { subTasks: patched } }).catch(reportError);
+  };
+  const addSubTask = () => {
+    if (!newSubTitle.trim()) return;
+    bridge.request({
+      kind: 'subtask.add',
+      taskId: task.id,
+      title: newSubTitle.trim(),
+      estimatedDuration: parseInt(newSubDur) || undefined,
+      dueDate: newSubDate || undefined,
+    }).catch(reportError);
+    setNewSubTitle(''); setNewSubDur(''); setNewSubDate(''); setShowSubForm(false);
+  };
 
   const startFocus = () => {
     // The focus-start event is intentionally NOT a bridge call — it doesn't
@@ -143,9 +167,6 @@ function DrawerInner({ task, allTasks, onClose }: { task: Task; allTasks: Task[]
 
   // Sanitize description for display (defense-in-depth; React already escapes)
   const safeDescription = sanitizeText(task.description ?? '');
-
-  // Suppress unused warning — setDueDate is wired to the date picker stub
-  void setDueDate;
 
   return (
     <div className="fixed inset-0 z-40 pointer-events-none" role="presentation">
@@ -235,6 +256,24 @@ function DrawerInner({ task, allTasks, onClose }: { task: Task; allTasks: Task[]
 
         {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto px-7 py-6 space-y-7">
+          {/* Due date */}
+          <Section icon="calendar" label="Due date">
+            <div className="relative">
+              <input
+                type="date"
+                value={task.dueDate ?? ''}
+                onChange={(e) => {
+                  bridge.request({
+                    kind: 'task.update',
+                    id: task.id,
+                    patch: { dueDate: e.target.value || undefined },
+                  }).catch(reportError);
+                }}
+                className="w-full h-10 bg-zinc-800/20 border border-zinc-800 hover:border-zinc-700 focus:border-violet-500/50 focus:ring-2 focus:ring-violet-500/15 rounded-lg px-3 text-sm text-zinc-300 outline-none transition-colors [color-scheme:dark]"
+              />
+            </div>
+          </Section>
+
           {/* Description */}
           <Section icon="file-text" label="Description">
             {editingDesc ? (
@@ -302,40 +341,54 @@ function DrawerInner({ task, allTasks, onClose }: { task: Task; allTasks: Task[]
             )}
             <div className="space-y-1.5">
               {task.subTasks.map((st) => (
-                <div
+                <SubTaskRow
                   key={st.id}
-                  className={`group rounded-lg border transition-all ${
-                    st.completed
-                      ? 'bg-zinc-900/40 border-zinc-800/60'
-                      : 'bg-zinc-800/30 border-zinc-800 hover:border-zinc-700'
-                  }`}
-                >
-                  <div className="flex items-center gap-2.5 px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleSub(st.id)}
-                      className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
-                        st.completed ? 'bg-violet-500 border-violet-500' : 'border-zinc-600 hover:border-violet-400'
-                      }`}
-                      aria-pressed={st.completed}
-                      aria-label={`Mark "${st.title}" ${st.completed ? 'incomplete' : 'complete'}`}
-                    >
-                      {st.completed && <Icon name="check" className="w-2.5 h-2.5 text-white" />}
-                    </button>
-                    <span className={`flex-1 text-sm leading-snug break-words [overflow-wrap:anywhere] ${st.completed ? 'line-through text-zinc-600' : 'text-zinc-200'}`}>
-                      {st.title}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => removeSub(st.id)}
-                      className="text-zinc-700 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
-                      aria-label={`Remove sub-task "${st.title}"`}
-                    >
-                      <Icon name="x" className="w-3.5 h-3.5" />
-                    </button>
+                  st={st}
+                  onToggle={() => toggleSub(st.id)}
+                  onRemove={() => removeSub(st.id)}
+                  onDuration={(d) => updateSubDuration(st.id, d)}
+                  onDate={(d) => updateSubDate(st.id, d)}
+                />
+              ))}
+              {showSubForm ? (
+                <div className="rounded-lg border border-violet-500/30 bg-violet-500/5 p-3 space-y-2">
+                  <input
+                    autoFocus
+                    placeholder="Sub-task title"
+                    value={newSubTitle}
+                    onChange={(e) => setNewSubTitle(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') addSubTask(); if (e.key === 'Escape') setShowSubForm(false); }}
+                    className="w-full bg-zinc-900/60 border border-zinc-800 rounded-md px-2.5 py-1.5 text-sm text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-violet-500/40"
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      placeholder="min"
+                      value={newSubDur}
+                      onChange={(e) => setNewSubDur(e.target.value)}
+                      className="w-20 bg-zinc-900/60 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-200 placeholder:text-zinc-600 outline-none focus:border-violet-500/40 font-mono"
+                    />
+                    <input
+                      type="date"
+                      value={newSubDate}
+                      onChange={(e) => setNewSubDate(e.target.value)}
+                      className="flex-1 bg-zinc-900/60 border border-zinc-800 rounded-md px-2 py-1.5 text-xs text-zinc-300 outline-none focus:border-violet-500/40 [color-scheme:dark]"
+                    />
+                    <button type="button" onClick={addSubTask} className="bg-violet-600 hover:bg-violet-500 text-white text-xs px-3 py-1.5 rounded-md transition-colors">Add</button>
+                    <button type="button" onClick={() => setShowSubForm(false)} className="text-xs px-2 py-1.5 text-zinc-400 hover:text-zinc-200 transition-colors">Cancel</button>
                   </div>
                 </div>
-              ))}
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setShowSubForm(true)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg border border-dashed border-zinc-800 hover:border-zinc-700 text-zinc-500 hover:text-zinc-300 text-sm transition-colors"
+                >
+                  <Icon name="plus" className="w-4 h-4" />
+                  Add sub-task
+                </button>
+              )}
             </div>
           </Section>
 
@@ -401,6 +454,72 @@ function Section({
       </div>
       {children}
     </section>
+  );
+}
+
+// ─── SubTaskRow with duration + dueDate inline inputs ─────────────────────────
+
+function SubTaskRow({ st, onToggle, onRemove, onDuration, onDate }: {
+  st: { id: string; title: string; completed: boolean; estimatedDuration?: number; dueDate?: string };
+  onToggle: () => void;
+  onRemove: () => void;
+  onDuration: (d: number) => void;
+  onDate: (iso: string) => void;
+}) {
+  const [durDraft, setDurDraft] = useState(String(st.estimatedDuration ?? ''));
+  // Sync if parent updates
+  useState(() => setDurDraft(String(st.estimatedDuration ?? '')));
+
+  return (
+    <div className={`group rounded-lg border transition-all ${
+      st.completed ? 'bg-zinc-900/40 border-zinc-800/60' : 'bg-zinc-800/30 border-zinc-800 hover:border-zinc-700'
+    }`}>
+      <div className="flex items-center gap-2.5 px-3 py-2">
+        <button
+          type="button"
+          onClick={onToggle}
+          className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all ${
+            st.completed ? 'bg-violet-500 border-violet-500' : 'border-zinc-600 hover:border-violet-400'
+          }`}
+          aria-pressed={st.completed}
+          aria-label={`Mark "${st.title}" ${st.completed ? 'incomplete' : 'complete'}`}
+        >
+          {st.completed && <Icon name="check" className="w-2.5 h-2.5 text-white" />}
+        </button>
+        <span className={`flex-1 text-sm leading-snug break-words [overflow-wrap:anywhere] min-w-0 ${
+          st.completed ? 'line-through text-zinc-600' : 'text-zinc-200'
+        }`}>
+          {st.title}
+        </span>
+        {/* Duration */}
+        <input
+          type="number"
+          min="0"
+          value={durDraft}
+          onChange={(e) => setDurDraft(e.target.value)}
+          onBlur={() => onDuration(parseInt(durDraft) || 0)}
+          placeholder="0"
+          className="w-12 bg-zinc-900/60 border border-zinc-800 rounded text-[11px] px-1.5 py-0.5 text-right text-zinc-300 outline-none focus:border-violet-500/40 font-mono"
+          title="Estimated minutes"
+        />
+        <span className="text-[10px] text-zinc-600">m</span>
+        {/* Due date */}
+        <input
+          type="date"
+          value={st.dueDate ?? ''}
+          onChange={(e) => onDate(e.target.value)}
+          className="bg-zinc-900/60 border border-zinc-800 rounded text-[11px] px-1.5 py-0.5 text-zinc-300 outline-none focus:border-violet-500/40 [color-scheme:dark] w-[118px]"
+        />
+        <button
+          type="button"
+          onClick={onRemove}
+          className="text-zinc-700 hover:text-rose-400 opacity-0 group-hover:opacity-100 focus-visible:opacity-100 transition-opacity"
+          aria-label={`Remove sub-task "${st.title}"`}
+        >
+          <Icon name="x" className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
   );
 }
 

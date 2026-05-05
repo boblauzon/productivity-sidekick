@@ -48,7 +48,6 @@ export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [vaultData, setVaultData] = useState<{ tasks: Task[]; resources: Resource[] }>({ tasks: [], resources: [] });
   const [loadingVault, setLoadingVault] = useState(false);
-  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const handleLogout = useCallback(() => {
     setSession(null);
@@ -90,15 +89,7 @@ export default function App() {
         onLogout={handleLogout}
         tasks={vaultData.tasks}
         resources={vaultData.resources}
-        onShowSettings={() => setSettingsOpen(true)}
       />
-      {settingsOpen && (
-        <SettingsModal
-          session={session}
-          onClose={() => setSettingsOpen(false)}
-          onLogout={handleLogout}
-        />
-      )}
     </BridgeProvider>
   );
 }
@@ -106,17 +97,17 @@ export default function App() {
 // ─── Shell ─────────────────────────────────────────────────────────────────────
 
 function Shell({
-  session, onLogout, tasks, resources, onShowSettings,
+  session, onLogout, tasks, resources,
 }: {
   session: AuthSession;
   onLogout: () => void;
   tasks: Task[];
   resources: Resource[];
-  onShowSettings: () => void;
 }) {
   const [view, setView] = useState<View>('focus');
   const [drawerTaskId, setDrawerTaskId] = useState<string | null>(null);
   const [theatreTaskId, setTheatreTaskId] = useState<string | null>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const [ui, setUi] = useState<UiPrefs>({
     theme: 'dark',
@@ -127,10 +118,14 @@ function Shell({
     distractorOptions: [],
   });
 
-  // Ensure the dark class is set on mount.
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
+  const toggleTheme = useCallback(() => {
+    setUi((p) => ({ ...p, theme: p.theme === 'dark' ? 'light' : 'dark' }));
   }, []);
+
+  // Reactively apply/remove the dark class — the CSS overrides in index.css do the rest.
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', ui.theme === 'dark');
+  }, [ui.theme]);
 
   // Focus-start event from the drawer or task card. Not a bridge concern —
   // it's pure UI routing into the theatre view.
@@ -165,8 +160,14 @@ function Shell({
 
   return (
     <div className="w-screen h-screen overflow-hidden flex bg-zinc-950 text-zinc-200">
-      {ui.toolbarPosition === 'left' && (
-        <IconRail view={view} onView={setView} email={session.email} onLogout={onLogout} onShowSettings={onShowSettings} />
+      {ui.toolbarPosition !== 'right' && (
+        <IconRail
+          view={view}
+          onView={setView}
+          theme={ui.theme}
+          onToggleTheme={toggleTheme}
+          onShowSettings={() => setSettingsOpen(true)}
+        />
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
@@ -190,6 +191,7 @@ function Shell({
             loading={false}
             onOpenTask={onOpenTask}
             onStartFocus={onStartFocus}
+            focusDuration={ui.focusDuration}
           />
         )}
 
@@ -210,11 +212,38 @@ function Shell({
         )}
       </main>
 
+      {ui.toolbarPosition === 'right' && (
+        <IconRail
+          view={view}
+          onView={setView}
+          theme={ui.theme}
+          onToggleTheme={toggleTheme}
+          onShowSettings={() => setSettingsOpen(true)}
+          side="right"
+        />
+      )}
+
       <TaskExpansionDrawer
         task={drawerTask}
         allTasks={tasks}
         onClose={closeDrawer}
       />
+
+      {settingsOpen && (
+        <SettingsModal
+          session={session}
+          onClose={() => setSettingsOpen(false)}
+          onLogout={onLogout}
+          theme={ui.theme}
+          onToggleTheme={toggleTheme}
+          workspaceProfile={ui.workspaceProfile}
+          onSetWorkspaceProfile={(v) => setUi((p) => ({ ...p, workspaceProfile: v }))}
+          focusDuration={ui.focusDuration}
+          onSetFocusDuration={(v) => setUi((p) => ({ ...p, focusDuration: v }))}
+          toolbarPosition={ui.toolbarPosition}
+          onSetToolbarPosition={(v) => setUi((p) => ({ ...p, toolbarPosition: v }))}
+        />
+      )}
     </div>
   );
 }
@@ -248,13 +277,14 @@ function TopBar({ view }: { view: View }) {
 }
 
 function IconRail({
-  view, onView, email, onLogout, onShowSettings,
+  view, onView, theme, onToggleTheme, onShowSettings, side = 'left',
 }: {
   view: View;
   onView: (v: View) => void;
-  email: string;
-  onLogout: () => void;
+  theme: 'dark' | 'light';
+  onToggleTheme: () => void;
   onShowSettings: () => void;
+  side?: 'left' | 'right';
 }) {
   const items: { id: View; icon: string; label: string }[] = [
     { id: 'dashboard', icon: 'layout-grid', label: 'Dashboard' },
@@ -262,8 +292,9 @@ function IconRail({
     { id: 'success',   icon: 'trophy',      label: 'Success' },
     { id: 'bookmarks', icon: 'library',     label: 'Resource Manager' },
   ];
+  const borderClass = side === 'right' ? 'border-l border-zinc-800' : 'border-r border-zinc-800';
   return (
-    <aside className="w-14 shrink-0 h-full border-r border-zinc-800 bg-zinc-950 flex flex-col items-center py-4 gap-1">
+    <aside className={`w-14 shrink-0 h-full ${borderClass} bg-zinc-950 flex flex-col items-center py-4 gap-1`}>
       <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-violet-700 flex items-center justify-center mb-3 shadow-lg shadow-violet-900/40">
         <Icon name="orbit" className="w-4 h-4 text-white" />
       </div>
@@ -288,21 +319,21 @@ function IconRail({
       <div className="flex-1" />
       <button
         type="button"
-        onClick={onShowSettings}
-        title="Settings"
-        aria-label="Open settings"
+        onClick={onToggleTheme}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        aria-label={`Toggle theme — currently ${theme}`}
         className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-200 active:scale-95"
       >
-        <Icon name="settings" className="w-[18px] h-[18px]" />
+        <Icon name={theme === 'dark' ? 'moon' : 'sun'} className="w-[18px] h-[18px]" />
       </button>
       <button
         type="button"
-        onClick={onLogout}
-        title={`Sign out (${email})`}
-        aria-label={`Sign out — signed in as ${email}`}
-        className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-all duration-200 active:scale-95 mt-1"
+        onClick={onShowSettings}
+        title="Settings"
+        aria-label="Open settings"
+        className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-200 active:scale-95 mt-0.5"
       >
-        <Icon name="log-out" className="w-[18px] h-[18px]" />
+        <Icon name="settings" className="w-[18px] h-[18px]" />
       </button>
     </aside>
   );
@@ -497,24 +528,288 @@ function EmptyDashboard() {
   );
 }
 
-// ─── Focus overview / theatre / stub ──────────────────────────────────────────
+// ─── Focus Overview Hub ────────────────────────────────────────────────────────
+// Massive elevated NBA card per design spec — ambient energy glow, score-ranked
+// next best action, sub-task checklist, Today's History grid/list toggle.
+
+const ENERGY_META = {
+  high:   { icon: 'zap',         color: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/25', glow: 'bg-emerald-500', label: 'High'   },
+  medium: { icon: 'battery',     color: 'text-amber-300',   bg: 'bg-amber-500/10',   border: 'border-amber-500/25',   glow: 'bg-amber-500',   label: 'Medium' },
+  low:    { icon: 'battery-low', color: 'text-sky-300',     bg: 'bg-sky-500/10',     border: 'border-sky-500/25',     glow: 'bg-sky-500',     label: 'Low'    },
+} as const;
+
+function formatDuration(min: number): string {
+  if (!min || min <= 0) return '';
+  if (min < 60) return `${min}m`;
+  const h = Math.floor(min / 60), m = min % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function formatDateRel(iso: string): string {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const diff = Math.round((d.getTime() - today.getTime()) / 86_400_000);
+  if (diff === 0) return 'Today';
+  if (diff === 1) return 'Tomorrow';
+  if (diff === -1) return 'Yesterday';
+  if (diff > 1 && diff < 7) return `In ${diff}d`;
+  if (diff < -1 && diff > -7) return `${-diff}d ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function rollupTime(task: Task): number {
+  if (task.subTasks.length) return task.subTasks.reduce((s, st) => s + (st.estimatedDuration ?? 0), 0);
+  return task.metadata?.estimatedDuration ?? 0;
+}
 
 function FocusOverview({
-  activeTasks, loading, onOpenTask, onStartFocus,
-}: { activeTasks: Task[]; loading: boolean; onOpenTask: (id: string) => void; onStartFocus: (id: string) => void }) {
+  activeTasks, loading, onOpenTask, onStartFocus, focusDuration,
+}: {
+  activeTasks: Task[];
+  loading: boolean;
+  onOpenTask: (id: string) => void;
+  onStartFocus: (id: string) => void;
+  focusDuration: number;
+}) {
+  const [showAlternatives, setShowAlternatives] = useState(false);
+  const [sessionViewMode, setSessionViewMode] = useState<'grid' | 'list'>('grid');
+
+  const candidates = useMemo(() => {
+    const eligible = activeTasks.filter((t) => t.blockers.length === 0);
+    const score = (t: Task) =>
+      (t.energyLevel === 'high' ? 30 : t.energyLevel === 'medium' ? 15 : 5) +
+      (t.dueDate ? Math.max(0, 14 - (new Date(t.dueDate).getTime() - Date.now()) / 86_400_000) : 0) +
+      (t.subTasks.length ? 5 : 0);
+    return [...eligible].sort((a, b) => score(b) - score(a));
+  }, [activeTasks]);
+
+  const next = candidates[0] ?? null;
+
   if (loading) return <div className="flex-1 grid place-items-center text-sm text-zinc-500">Loading…</div>;
-  if (activeTasks.length === 0) {
-    return <StubView icon="target" title="No active tasks" body="Capture your first task on the Dashboard to surface a Next Best Action." />;
+
+  if (!next) {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center max-w-md">
+          <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-4">
+            <Icon name="target" className="w-6 h-6 text-zinc-500" />
+          </div>
+          <h2 className="text-zinc-300 text-lg mb-1.5">No active tasks</h2>
+          <p className="text-sm text-zinc-500 leading-relaxed">
+            Create a task on the Dashboard to surface a Next Best Action.
+          </p>
+        </div>
+      </div>
+    );
   }
+
+  const energy = ENERGY_META[next.energyLevel];
+  const rollup = rollupTime(next);
+  const subDone = next.subTasks.filter((s) => s.completed).length;
+  const subTot  = next.subTasks.length;
+  const pct     = subTot ? Math.round((subDone / subTot) * 100) : 0;
+
   return (
     <div className="flex-1 overflow-y-auto">
-      <div className="max-w-5xl mx-auto px-8 py-8 space-y-6">
-        <h2 className="text-zinc-300 text-lg">Up next</h2>
-        <div className="space-y-2">
-          {activeTasks.slice(0, 5).map((t) => (
-            <TaskCard key={t.id} task={t} onOpen={onOpenTask} onStartFocus={onStartFocus} />
-          ))}
-        </div>
+      <div className="max-w-5xl mx-auto px-8 py-8 space-y-10">
+
+        {/* ── Massive elevated Next Best Action card ── */}
+        <section className="relative">
+          {/* Ambient energy glow */}
+          <div className="absolute inset-0 -z-10 overflow-hidden rounded-[28px] pointer-events-none">
+            <div className={`absolute -top-32 left-1/2 -translate-x-1/2 w-[640px] h-[640px] rounded-full blur-3xl opacity-[0.15] ${energy.glow}`} />
+          </div>
+
+          <div className="relative bg-zinc-900 border border-zinc-800 rounded-[28px] shadow-2xl shadow-black/40 overflow-hidden">
+            {/* Overline */}
+            <div className="px-9 pt-7 pb-1 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-zinc-500">
+                <span className="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" />
+                Next Best Action
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] uppercase tracking-wider text-zinc-600">Score-ranked</span>
+                {candidates.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAlternatives((v) => !v)}
+                    className="text-[11px] text-zinc-400 hover:text-violet-300 flex items-center gap-1 transition-colors"
+                  >
+                    {showAlternatives ? 'Hide' : 'See'} alternatives
+                    <Icon name={showAlternatives ? 'chevron-up' : 'chevron-down'} className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="px-9 pt-3 pb-8">
+              {/* Title */}
+              <h2 className="text-zinc-50 text-[36px] leading-[1.1] tracking-tight max-w-3xl">
+                {next.title}
+              </h2>
+              {next.description && (
+                <p className="text-zinc-400 mt-2.5 max-w-2xl text-[15px] leading-relaxed line-clamp-2">
+                  {next.description}
+                </p>
+              )}
+
+              {/* Metadata pills */}
+              <div className="flex items-center gap-2 mt-5 flex-wrap">
+                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs ${energy.bg} ${energy.color} border ${energy.border}`}>
+                  <Icon name={energy.icon} className="w-3.5 h-3.5" />
+                  {energy.label} energy
+                </span>
+                {next.bucket && (
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700/70">
+                    {next.bucket}
+                  </span>
+                )}
+                {rollup > 0 && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-violet-500/10 text-violet-300 border border-violet-500/30">
+                    <Icon name="clock" className="w-3.5 h-3.5" />
+                    ~{formatDuration(rollup)}
+                  </span>
+                )}
+                {next.dueDate && (
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-zinc-800 text-zinc-300 border border-zinc-700/70">
+                    <Icon name="calendar" className="w-3.5 h-3.5" />
+                    Due {formatDateRel(next.dueDate)}
+                  </span>
+                )}
+              </div>
+
+              {/* Sub-task progress strip + checklist */}
+              {subTot > 0 && (
+                <div className="mt-7">
+                  <div className="flex items-baseline justify-between mb-2">
+                    <span className="text-[11px] uppercase tracking-[0.14em] text-zinc-500">
+                      Sub-tasks · {subDone} of {subTot}
+                    </span>
+                    <span className="text-[11px] text-zinc-400 tabular-nums">{pct}%</span>
+                  </div>
+                  <div className="h-[3px] rounded-full bg-zinc-800 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-2.5 mt-5">
+                    {next.subTasks.slice(0, 6).map((st) => (
+                      <div key={st.id} className="flex items-start gap-2.5 text-[14px]">
+                        <span className={`mt-[3px] w-[18px] h-[18px] rounded-md border-2 flex items-center justify-center shrink-0 ${
+                          st.completed ? 'bg-violet-500 border-violet-500' : 'border-zinc-600'
+                        }`}>
+                          {st.completed && <Icon name="check" className="w-3 h-3 text-white" />}
+                        </span>
+                        <span className={`flex-1 min-w-0 leading-snug break-words [overflow-wrap:anywhere] ${
+                          st.completed ? 'line-through text-zinc-600' : 'text-zinc-300'
+                        }`}>{st.title}</span>
+                      </div>
+                    ))}
+                    {subTot > 6 && (
+                      <span className="text-xs text-zinc-600 col-span-2">+{subTot - 6} more</span>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Action row */}
+              <div className="mt-8 flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => onStartFocus(next.id)}
+                  className="inline-flex items-center gap-2.5 bg-violet-600 hover:bg-violet-500 active:bg-violet-700 text-white text-[15px] px-7 py-3.5 rounded-xl shadow-lg shadow-violet-900/40 transition-all duration-200 active:scale-[0.97]"
+                >
+                  <Icon name="play" className="w-4 h-4" />
+                  Start Focus
+                  <span className="text-violet-100 text-xs ml-1 px-2 py-0.5 rounded-md bg-violet-700/60 tabular-nums font-mono">
+                    {focusDuration}m
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onOpenTask(next.id)}
+                  className="inline-flex items-center gap-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-sm px-4 py-3 rounded-xl border border-zinc-700/60 transition-all duration-200 active:scale-[0.97]"
+                >
+                  <Icon name="square-pen" className="w-4 h-4" />
+                  Open details
+                </button>
+                <div className="flex-1" />
+                <button
+                  type="button"
+                  className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-100 text-sm px-3 py-2 transition-colors"
+                >
+                  <Icon name="clock" className="w-4 h-4" />
+                  Defer
+                </button>
+              </div>
+            </div>
+
+            {/* Alternatives drawer */}
+            {showAlternatives && (
+              <div className="border-t border-zinc-800 bg-zinc-950/40">
+                <div className="px-8 py-5">
+                  <p className="text-[11px] uppercase tracking-wider text-zinc-500 mb-3">Other strong candidates</p>
+                  <div className="space-y-1.5">
+                    {candidates.slice(1, 5).map((c) => {
+                      const e = ENERGY_META[c.energyLevel];
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => onOpenTask(c.id)}
+                          className="w-full text-left flex items-center gap-3 p-2.5 rounded-lg hover:bg-zinc-900 transition-colors"
+                        >
+                          <span className={`w-6 h-6 rounded-md flex items-center justify-center ${e.bg} ${e.border} border`}>
+                            <Icon name={e.icon} className={`w-3 h-3 ${e.color}`} />
+                          </span>
+                          <span className="text-sm text-zinc-300 flex-1 truncate">{c.title}</span>
+                          {c.bucket && <span className="text-xs text-zinc-500">{c.bucket}</span>}
+                          <Icon name="chevron-right" className="w-3.5 h-3.5 text-zinc-600" />
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ── Today's History ── */}
+        <section>
+          <div className="flex items-end justify-between mb-5">
+            <div>
+              <h3 className="text-zinc-100 text-lg tracking-tight">Today's History</h3>
+              <p className="text-xs text-zinc-500 mt-1">Focus sessions completed today</p>
+            </div>
+            <div className="inline-flex items-center bg-zinc-900 border border-zinc-800 rounded-lg p-0.5">
+              {(['grid', 'list'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setSessionViewMode(m)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs transition-colors ${
+                    sessionViewMode === m ? 'bg-zinc-800 text-violet-300' : 'text-zinc-500 hover:text-zinc-300'
+                  }`}
+                >
+                  <Icon name={m === 'grid' ? 'layout-grid' : 'list'} className="w-3.5 h-3.5" />
+                  {m === 'grid' ? 'Grid' : 'List'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 text-center">
+            <Icon name="clock" className="w-8 h-8 text-zinc-700 mx-auto mb-2" />
+            <p className="text-sm text-zinc-500">No focus sessions yet today</p>
+            <p className="text-xs text-zinc-600 mt-1">
+              Press <span className="text-violet-300">Start Focus</span> to log your first.
+            </p>
+          </div>
+        </section>
+
       </div>
     </div>
   );
