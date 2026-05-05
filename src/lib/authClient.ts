@@ -44,6 +44,9 @@ async function apiFetch(
 export async function login(email: string, password: string): Promise<AuthSession> {
   const emailClean = email.toLowerCase().trim();
   const { encKey, authKeyHex } = await deriveKeys(password, emailClean);
+  // JS strings are GC-managed and can't be zeroed; clearing the local ref
+  // minimises the window during which the password is reachable on the stack.
+  password = '';
 
   const result = await apiFetch('/auth/login', {
     method: 'POST',
@@ -65,6 +68,7 @@ export async function register(
 ): Promise<{ session: AuthSession; recoveryKey: string }> {
   const emailClean = email.toLowerCase().trim();
   const { encKey, authKeyHex } = await deriveKeys(password, emailClean);
+  password = '';
   const { recoveryKey, recoveryBlob } = await generateRecoveryKit(encKey);
 
   const result = await apiFetch('/auth/register', {
@@ -141,6 +145,7 @@ export async function recoverAccount(
   }
 
   const { authKeyHex: newAuthKeyHex } = await deriveKeys(newPassword, emailClean);
+  newPassword = '';
   const { recoveryKey: newRecoveryKey, recoveryBlob: newRecoveryBlob } =
     await generateRecoveryKit(encKey);
 
