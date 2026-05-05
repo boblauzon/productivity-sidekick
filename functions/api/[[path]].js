@@ -18,6 +18,13 @@
  *   DB              — D1 database
  *   SESSION_SECRET  — HMAC signing key for session tokens (secret)
  *   BETA_CODE       — Registration gate code (secret)
+ *
+ * Operational metadata (PR-0):
+ *   Every authenticated endpoint reads the `X-Client-Version` header and
+ *   uses it to populate `users.app_version_at_registration` (on register)
+ *   and `users.last_login_app_version` + `users.last_login_at` +
+ *   `users.login_count` (on login). Versions are validated to a strict
+ *   charset and length to prevent injection.
  */
 
 // ============================================================
@@ -48,6 +55,24 @@ function maybeCleanup() {
     for (const [ip, entry] of rateLimitMap) {
         if (now - entry.start > RATE_LIMIT_WINDOW * 2) rateLimitMap.delete(ip);
     }
+}
+
+// ============================================================
+// CLIENT VERSION HEADER (PR-0)
+// ============================================================
+
+// Allowed characters: alphanumerics plus the standard semver/git-sha
+// punctuation (`. _ + - `). Anything else returns null so the field stays
+// NULL in the DB rather than failing the whole request — invalid metadata
+// shouldn't block a user from logging in.
+const CLIENT_VERSION_RE = /^[A-Za-z0-9._+\-]{1,64}$/;
+
+function getClientVersion(request) {
+    const raw = request.headers.get('X-Client-Version');
+    if (!raw) return null;
+    const trimmed = raw.trim();
+    if (!CLIENT_VERSION_RE.test(trimmed)) return null;
+    return trimmed;
 }
 
 // ============================================================
@@ -187,10 +212,23 @@ async function handleRegister(request, env) {
 
     const userId = crypto.randomUUID();
     const recoveryBlobJson = JSON.stringify(recoveryBlob);
+    const clientVersion = getClientVersion(request);
+    const now = Date.now();
 
+    // PR-0: Capture registration version + initial login state in one row.
+    // app_version_at_registration is set ONCE here and never updated.
+    // last_login_* fields are also seeded — registration counts as the first login.
     await env.DB.prepare(
-        'INSERT INTO users (id, email, auth_key_hash, recovery_blob) VALUES (?, ?, ?, ?)'
-    ).bind(userId, emailClean, authHash, recoveryBlobJson).run();
+        `INSERT INTO users (
+            id, email, auth_key_hash, recovery_blob,
+            app_version_at_registration, last_login_app_version,
+            last_login_at, login_count
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 1)`
+    ).bind(
+        userId, emailClean, authHash, recoveryBlobJson,
+        clientVersion, clientVersion,
+        now,
+    ).run();
 
     // Initialize empty vault
     await env.DB.prepare(
@@ -221,6 +259,20 @@ async function handleLogin(request, env) {
     if (!user || user.auth_key_hash !== authHash) {
         return errorResponse('Invalid email or password.', 401);
     }
+
+    // PR-0: Update login tracking. We use a single statement with COALESCE on
+    // login_count for resilience against rows that predate the migration —
+    // although the migration sets DEFAULT 0, defensive coding is cheap.
+    // The version column accepts NULL when the header is missing or invalid.
+    const clientVersion = getClientVersion(request);
+    const now = Date.now();
+    await env.DB.prepare(
+        `UPDATE users
+         SET last_login_app_version = ?,
+             last_login_at = ?,
+             login_count = COALESCE(login_count, 0) + 1
+         WHERE id = ?`
+    ).bind(clientVersion, now, user.id).run();
 
     const token = await createSessionToken(user.id, env.SESSION_SECRET);
 
@@ -540,7 +592,7 @@ export async function onRequest(context) {
             headers: {
                 'Access-Control-Allow-Origin': corsOrigin,
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-                'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+                'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Client-Version',
                 'Access-Control-Max-Age': '86400',
             },
         });

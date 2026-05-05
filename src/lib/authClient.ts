@@ -2,6 +2,10 @@
 // Typed wrapper around /api/auth/* and /api/vault endpoints.
 // Crypto operations run on the main thread for the staging build; the
 // production worker migration will move key material inside the enclave.
+//
+// Every outgoing request carries an `X-Client-Version` header so the backend
+// can record which build a user registered with and which build they last
+// logged in from. This is non-sensitive operational metadata — no IP, no UA.
 
 import { deriveKeys, generateRecoveryKit, recoverEncKey, decryptVault, encryptVault } from './crypto';
 import type { RecoveryBlob } from './crypto';
@@ -19,7 +23,10 @@ async function apiFetch(
   path: string,
   opts: { method?: string; token?: string; body?: unknown } = {},
 ): Promise<Record<string, unknown>> {
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'X-Client-Version': __APP_VERSION__,
+  };
   if (opts.token) headers['Authorization'] = `Bearer ${opts.token}`;
 
   const resp = await fetch(`${API_BASE}${path}`, {
