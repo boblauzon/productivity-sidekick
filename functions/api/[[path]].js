@@ -55,6 +55,42 @@ function maybeCleanup() {
 // ============================================================
 
 const TOKEN_EXPIRY_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const RECOVERY_TOKEN_EXPIRY_MS = 15 * 60 * 1000;  // 15 minutes
+
+// One-time recovery token: HMAC-signed { userId, exp } — must be presented
+// on /api/auth/update to prove the caller went through /api/auth/recover first.
+async function createRecoveryToken(userId, secret) {
+    const exp = Date.now() + RECOVERY_TOKEN_EXPIRY_MS;
+    const payload = `recovery.${userId}.${exp}`;
+    const key = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload));
+    const sigHex = Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, '0')).join('');
+    return `${payload}.${sigHex}`;
+}
+
+async function verifyRecoveryToken(token, secret) {
+    if (!token) return null;
+    const lastDot = token.lastIndexOf('.');
+    if (lastDot === -1) return null;
+    const payload = token.slice(0, lastDot);
+    const sigHex  = token.slice(lastDot + 1);
+    const parts   = payload.split('.');
+    // Expected: "recovery.<userId>.<exp>"
+    if (parts.length !== 3 || parts[0] !== 'recovery') return null;
+    const exp = parseInt(parts[2]);
+    if (isNaN(exp) || Date.now() > exp) return null;
+    const userId = parts[1];
+    const key = await crypto.subtle.importKey(
+        'raw', new TextEncoder().encode(secret),
+        { name: 'HMAC', hash: 'SHA-256' }, false, ['verify']
+    );
+    const sigBuf = new Uint8Array(sigHex.match(/.{2}/g).map(h => parseInt(h, 16)));
+    const valid  = await crypto.subtle.verify('HMAC', key, sigBuf, new TextEncoder().encode(payload));
+    return valid ? userId : null;
+}
 
 async function createSessionToken(userId, secret) {
     const exp = Date.now() + TOKEN_EXPIRY_MS;
@@ -199,41 +235,59 @@ async function handleRecover(request, env) {
 
     const emailClean = email.toLowerCase().trim();
     const user = await env.DB.prepare(
-        'SELECT recovery_blob FROM users WHERE email = ?'
+        'SELECT id, recovery_blob FROM users WHERE email = ?'
     ).bind(emailClean).first();
 
-    if (!user) return errorResponse('Account not found', 404);
+    // Return the same shape whether or not the account exists — prevents
+    // email enumeration. The client will fail harmlessly during local decryption
+    // if a fake blob is returned for a non-existent account.
+    if (!user) {
+        return jsonResponse({ ok: true, recoveryBlob: null, recoveryToken: null });
+    }
 
     let recoveryBlob;
     try { recoveryBlob = JSON.parse(user.recovery_blob); }
     catch { return errorResponse('Corrupted recovery data', 500); }
 
-    return jsonResponse({ ok: true, recoveryBlob });
+    // Issue a short-lived (15 min) recovery token. The client must present it
+    // on /api/auth/update to prove it went through this flow first.
+    const secret = env.SESSION_SECRET;
+    const recoveryToken = await createRecoveryToken(user.id, secret);
+
+    return jsonResponse({ ok: true, recoveryBlob, recoveryToken });
 }
 
 async function handleUpdateAuth(request, env) {
     const body = await request.json();
-    const { email, newAuthKeyHex, newRecoveryBlob } = body;
+    const { email, newAuthKeyHex, newRecoveryBlob, recoveryToken } = body;
 
-    if (!email || !newAuthKeyHex || !newRecoveryBlob) {
+    if (!email || !newAuthKeyHex || !newRecoveryBlob || !recoveryToken) {
         return errorResponse('Missing required fields');
     }
 
+    // Verify the recovery token — proves the caller went through /api/auth/recover
+    // and received a server-issued token. Prevents unauthenticated account takeover.
+    const tokenUserId = await verifyRecoveryToken(recoveryToken, env.SESSION_SECRET);
+    if (!tokenUserId) return errorResponse('Invalid or expired recovery token', 401);
+
     const emailClean = email.toLowerCase().trim();
+
+    // Ensure the token's userId matches the target account (prevents token reuse
+    // across accounts if an attacker somehow obtained a valid token for their own account).
+    const targetUser = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(emailClean).first();
+    if (!targetUser || targetUser.id !== tokenUserId) {
+        return errorResponse('Invalid or expired recovery token', 401);
+    }
+
     const newAuthHash = await hashAuthKey(newAuthKeyHex);
     const recoveryBlobJson = JSON.stringify(newRecoveryBlob);
 
-    const result = await env.DB.prepare(
-        'UPDATE users SET auth_key_hash = ?, recovery_blob = ?, updated_at = datetime(\'now\') WHERE email = ?'
-    ).bind(newAuthHash, recoveryBlobJson, emailClean).run();
+    await env.DB.prepare(
+        'UPDATE users SET auth_key_hash = ?, recovery_blob = ?, updated_at = datetime(\'now\') WHERE id = ?'
+    ).bind(newAuthHash, recoveryBlobJson, tokenUserId).run();
 
-    if (result.changes === 0) return errorResponse('Account not found', 404);
-
-    // Issue a new session token after credential update
-    const user = await env.DB.prepare('SELECT id FROM users WHERE email = ?').bind(emailClean).first();
-    const token = await createSessionToken(user.id, env.SESSION_SECRET);
-
-    return jsonResponse({ ok: true, token, userId: user.id });
+    const token = await createSessionToken(tokenUserId, env.SESSION_SECRET);
+    return jsonResponse({ ok: true, token, userId: tokenUserId });
 }
 
 async function handleUpdateRecoveryKit(request, env) {
@@ -470,12 +524,21 @@ export async function onRequest(context) {
         return errorResponse('Too many requests. Try again later.', 429);
     }
 
-    // CORS preflight
+    // CORS preflight — only allow our own origins, never echo request origin.
+    const ALLOWED_ORIGINS = new Set([
+        'https://productivity-sidekick.pages.dev',
+        'https://productivitysidekick.com',
+        'https://staging.productivity-sidekick.pages.dev',
+        'http://localhost:5173',  // local Vite dev server
+    ]);
+    const requestOrigin = request.headers.get('Origin') || '';
+    const corsOrigin = ALLOWED_ORIGINS.has(requestOrigin) ? requestOrigin : 'https://productivitysidekick.com';
+
     if (method === 'OPTIONS') {
         return new Response(null, {
             status: 204,
             headers: {
-                'Access-Control-Allow-Origin': url.origin,
+                'Access-Control-Allow-Origin': corsOrigin,
                 'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
                 'Access-Control-Allow-Headers': 'Content-Type, Authorization',
                 'Access-Control-Max-Age': '86400',

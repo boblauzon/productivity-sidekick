@@ -127,6 +127,12 @@ export async function recoverAccount(
     body: { email: emailClean },
   });
 
+  // Server returns null blob + null token for non-existent accounts to prevent
+  // email enumeration. Treat it the same as an invalid recovery key.
+  if (!blobResult.recoveryBlob || !blobResult.recoveryToken) {
+    throw new Error('Invalid recovery key');
+  }
+
   let encKey: CryptoKey;
   try {
     encKey = await recoverEncKey(recoveryKeyFormatted, blobResult.recoveryBlob as RecoveryBlob);
@@ -138,9 +144,10 @@ export async function recoverAccount(
   const { recoveryKey: newRecoveryKey, recoveryBlob: newRecoveryBlob } =
     await generateRecoveryKit(encKey);
 
+  // Pass the server-issued recovery token — proves we went through /api/auth/recover.
   const updateResult = await apiFetch('/auth/update', {
     method: 'POST',
-    body: { email: emailClean, newAuthKeyHex, newRecoveryBlob },
+    body: { email: emailClean, newAuthKeyHex, newRecoveryBlob, recoveryToken: blobResult.recoveryToken },
   });
 
   return {
