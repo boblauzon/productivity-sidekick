@@ -3,8 +3,10 @@
 //   Sidebar nav → content pane. Tabs: Appearance, Workspace, Account, Data.
 
 import { useRef, useState } from 'react';
-import type { AuthSession } from '../lib/authClient';
+import { loadVault, saveVault, type AuthSession } from '../lib/authClient';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import { useBridge } from '../hooks/useCryptoBridge';
+import { buildExportPayload, downloadVaultBackup, parseImportFile, mergeVaults, type ImportSummary } from '../lib/exportVault';
 import { Icon } from './Icon';
 
 export interface SettingsModalProps {
@@ -128,7 +130,7 @@ export function SettingsModal({
             {tab === 'account' && (
               <AccountPane session={session} onLogout={onLogout} onClose={onClose} />
             )}
-            {tab === 'data' && <DataPane />}
+            {tab === 'data' && <DataPane session={session} />}
           </div>
         </div>
       </div>
@@ -277,30 +279,235 @@ function AccountPane({
   );
 }
 
-function DataPane() {
+function DataPane({ session }: { session: AuthSession }) {
+  const bridge = useBridge();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Export state
+  const [exportState, setExportState] = useState<'idle' | 'exporting' | 'downloaded' | 'error'>('idle');
+  const [exportError, setExportError] = useState<string | null>(null);
+  const [downloadedFilename, setDownloadedFilename] = useState<string | null>(null);
+
+  // Import state
+  const [importState, setImportState] = useState<'idle' | 'ready' | 'restoring' | 'done' | 'error'>('idle');
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importMode, setImportMode] = useState<'replace' | 'merge' | null>(null);
+
+  const handleExport = async () => {
+    setExportState('exporting');
+    setExportError(null);
+    try {
+      const [tasks, resources] = await Promise.all([
+        bridge.request({ kind: 'task.list' }),
+        bridge.request({ kind: 'resource.list' }),
+      ]);
+      const payload = buildExportPayload(tasks, resources, session.email);
+      const filename = downloadVaultBackup(payload);
+      setDownloadedFilename(filename);
+      setExportState('downloaded');
+      setTimeout(() => { setExportState('idle'); setDownloadedFilename(null); }, 2500);
+    } catch (err) {
+      setExportError(err instanceof Error ? err.message : 'Export failed');
+      setExportState('error');
+    }
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+    try {
+      const summary = await parseImportFile(file);
+      setImportSummary(summary);
+      setImportError(null);
+      setImportState('ready');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Could not parse backup file.');
+      setImportState('error');
+    }
+  };
+
+  const handleImport = async (mode: 'replace' | 'merge') => {
+    if (!importSummary) return;
+    setImportMode(mode);
+    setImportState('restoring');
+    try {
+      const { data: currentData, version } = await loadVault(session);
+      let vaultToSave = importSummary.payload.vault;
+      if (mode === 'merge' && currentData) {
+        const cv = currentData as Record<string, unknown>;
+        if (cv.format === 'v2') {
+          vaultToSave = mergeVaults(currentData as typeof vaultToSave, importSummary.payload.vault);
+        }
+      }
+      await saveVault(session, vaultToSave, version);
+      setImportState('done');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Import failed.');
+      setImportState('error');
+    }
+  };
+
+  const resetImport = () => { setImportState('idle'); setImportSummary(null); setImportError(null); setImportMode(null); };
+
   return (
     <div className="space-y-4">
-      {[
-        { icon: 'download', title: 'Export backup', desc: 'Download an encrypted copy of your vault.' },
-        { icon: 'upload',   title: 'Import backup', desc: 'Restore from a previously exported vault file.' },
-        { icon: 'trash-2',  title: 'Delete account', desc: 'Permanently remove your account and all data.', danger: true },
-      ].map((item) => (
-        <div
-          key={item.title}
-          className={`flex items-center justify-between p-4 rounded-xl border ${
-            item.danger ? 'border-rose-500/20 bg-rose-500/5' : 'border-zinc-800 bg-zinc-800/20'
+      {/* ── Export backup ─────────────────────────────────────────────── */}
+      <div className="flex items-center justify-between p-4 rounded-xl border border-zinc-800 bg-zinc-800/20">
+        <div className="flex items-start gap-3 flex-1 min-w-0">
+          <Icon name="download" className="w-4 h-4 mt-0.5 text-zinc-400 shrink-0" />
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-zinc-200">Export backup</div>
+            <div className="text-zinc-500 text-[12px] mt-0.5 leading-relaxed">
+              Downloads a plaintext JSON file containing all your tasks and resources.
+              Treat this file like a password — anyone with it can read your data.
+            </div>
+            {exportState === 'error' && exportError && (
+              <div className="mt-2 text-[12px] text-rose-300 inline-flex items-start gap-1.5">
+                <Icon name="alert-triangle" className="w-3 h-3 mt-0.5 shrink-0" />
+                <span>{exportError}</span>
+              </div>
+            )}
+            {exportState === 'downloaded' && downloadedFilename && (
+              <div className="mt-2 text-[12px] text-emerald-300 inline-flex items-start gap-1.5">
+                <Icon name="check" className="w-3 h-3 mt-0.5 shrink-0" />
+                <span>Saved as <span className="font-mono text-emerald-200">{downloadedFilename}</span></span>
+              </div>
+            )}
+          </div>
+        </div>
+        <button
+          type="button"
+          onClick={handleExport}
+          disabled={exportState === 'exporting'}
+          className={`shrink-0 ml-4 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium transition-all duration-150 active:scale-95 ${
+            exportState === 'downloaded'
+              ? 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+              : exportState === 'exporting'
+              ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed'
+              : 'bg-violet-600 hover:bg-violet-500 text-white shadow-lg shadow-violet-900/30'
           }`}
         >
-          <div className="flex items-start gap-3">
-            <Icon name={item.icon} className={`w-4 h-4 mt-0.5 ${item.danger ? 'text-rose-400' : 'text-zinc-400'}`} />
-            <div>
-              <div className={`text-sm font-medium ${item.danger ? 'text-rose-300' : 'text-zinc-200'}`}>{item.title}</div>
-              <div className="text-zinc-500 text-[12px] mt-0.5">{item.desc}</div>
+          {exportState === 'exporting' && (<><span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />Preparing…</>)}
+          {exportState === 'downloaded' && (<><Icon name="check" className="w-3.5 h-3.5" />Downloaded</>)}
+          {(exportState === 'idle' || exportState === 'error') && (<><Icon name="download" className="w-3.5 h-3.5" />Download backup</>)}
+        </button>
+      </div>
+
+      {/* ── Import backup ─────────────────────────────────────────────── */}
+      <div className="p-4 rounded-xl border border-zinc-800 bg-zinc-800/20">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json,application/json"
+          className="hidden"
+          onChange={handleFileSelect}
+        />
+        <div className="flex items-center justify-between">
+          <div className="flex items-start gap-3 flex-1 min-w-0">
+            <Icon name="upload" className="w-4 h-4 mt-0.5 text-zinc-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium text-zinc-200">Import backup</div>
+              <div className="text-zinc-500 text-[12px] mt-0.5 leading-relaxed">
+                Restore from a previously exported backup file. Overwrites your current vault.
+              </div>
             </div>
           </div>
-          <span className="text-[10px] text-zinc-600 border border-zinc-700 rounded px-1.5 py-0.5 ml-4 shrink-0">v1.4.0</span>
+          <div className="shrink-0 ml-4 flex items-center gap-2">
+            {(importState === 'idle' || importState === 'error') && (
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-zinc-100 transition-all duration-150 active:scale-95"
+              >
+                <Icon name="upload" className="w-3.5 h-3.5" />
+                Choose file
+              </button>
+            )}
+            {importState === 'ready' && (
+              <>
+                <button
+                  type="button"
+                  onClick={resetImport}
+                  className="inline-flex items-center h-9 px-3 rounded-lg text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleImport('merge')}
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium bg-zinc-700 hover:bg-zinc-600 text-zinc-100 transition-all duration-150 active:scale-95"
+                >
+                  <Icon name="git-merge" className="w-3.5 h-3.5" />
+                  Merge
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleImport('replace')}
+                  className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium bg-amber-600 hover:bg-amber-500 text-white transition-all duration-150 active:scale-95"
+                >
+                  <Icon name="upload" className="w-3.5 h-3.5" />
+                  Replace
+                </button>
+              </>
+            )}
+            {importState === 'restoring' && (
+              <button type="button" disabled className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium bg-zinc-800 text-zinc-500 cursor-not-allowed">
+                <span className="w-3 h-3 rounded-full border-2 border-white/30 border-t-white animate-spin" />
+                Restoring…
+              </button>
+            )}
+            {importState === 'done' && (
+              <button
+                type="button"
+                onClick={() => window.location.reload()}
+                className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg text-xs font-medium bg-emerald-600 hover:bg-emerald-500 text-white transition-all duration-150 active:scale-95"
+              >
+                <Icon name="refresh-cw" className="w-3.5 h-3.5" />
+                Reload page
+              </button>
+            )}
+          </div>
         </div>
-      ))}
+        {importState === 'ready' && importSummary && (
+          <div className="mt-3 ml-7 p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/25 text-[12px] text-amber-200 leading-relaxed">
+            <span className="font-medium">
+              {importSummary.taskCount} task{importSummary.taskCount !== 1 ? 's' : ''} and{' '}
+              {importSummary.resourceCount} resource{importSummary.resourceCount !== 1 ? 's' : ''}
+            </span>{' '}
+            from {new Date(importSummary.payload.exportedAt).toLocaleString()}.{' '}
+            <span className="text-amber-300/80">
+              Merge adds these to your vault (newer edit wins on conflict).
+              Replace overwrites your vault entirely.
+            </span>
+          </div>
+        )}
+        {importState === 'error' && importError && (
+          <div className="mt-3 ml-7 text-[12px] text-rose-300 inline-flex items-start gap-1.5">
+            <Icon name="alert-triangle" className="w-3 h-3 mt-0.5 shrink-0" />
+            <span>{importError}</span>
+          </div>
+        )}
+        {importState === 'done' && (
+          <div className="mt-3 ml-7 text-[12px] text-emerald-300 inline-flex items-start gap-1.5">
+            <Icon name="check" className="w-3 h-3 mt-0.5 shrink-0" />
+            <span>Vault {importMode === 'merge' ? 'merged' : 'replaced'} successfully. Reload to see your data.</span>
+          </div>
+        )}
+      </div>
+
+      {/* ── Delete account — stub ─────────────────────────────────────── */}
+      <div className="flex items-center justify-between p-4 rounded-xl border border-rose-500/20 bg-rose-500/5">
+        <div className="flex items-start gap-3">
+          <Icon name="trash-2" className="w-4 h-4 mt-0.5 text-rose-400" />
+          <div>
+            <div className="text-sm font-medium text-rose-300">Delete account</div>
+            <div className="text-zinc-500 text-[12px] mt-0.5">Permanently remove your account and all data.</div>
+          </div>
+        </div>
+        <span className="text-[10px] text-zinc-600 border border-zinc-700 rounded px-1.5 py-0.5 ml-4 shrink-0">v1.4.0</span>
+      </div>
     </div>
   );
 }
