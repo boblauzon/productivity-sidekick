@@ -28,7 +28,9 @@ import {
 } from 'react';
 import { createBrowserBridge } from './lib/cryptoBridge';
 import type { Task, Resource, FocusSession, UiPrefs } from './lib/types';
+import type { AuthSession } from './lib/authClient';
 import { BridgeProvider, useBridgeQuery, useBridge } from './hooks/useCryptoBridge';
+import { AuthScreen } from './components/AuthScreen';
 import { TaskCard } from './components/TaskCard';
 import { TaskExpansionDrawer } from './components/TaskExpansionDrawer';
 import { EnhancedBookmarkHub } from './components/EnhancedBookmarkHub';
@@ -40,16 +42,23 @@ type View = 'dashboard' | 'focus' | 'theatre' | 'success' | 'bookmarks';
 const bridge = createBrowserBridge();
 
 export default function App() {
+  const [session, setSession] = useState<AuthSession | null>(null);
+  const handleLogout = useCallback(() => setSession(null), []);
+
+  if (!session) {
+    return <AuthScreen onAuthenticated={setSession} />;
+  }
+
   return (
     <BridgeProvider bridge={bridge}>
-      <Shell />
+      <Shell session={session} onLogout={handleLogout} />
     </BridgeProvider>
   );
 }
 
 // ─── Shell ─────────────────────────────────────────────────────────────────────
 
-function Shell() {
+function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => void }) {
   const [view, setView] = useState<View>('focus');
   const [drawerTaskId, setDrawerTaskId] = useState<string | null>(null);
   const [theatreTaskId, setTheatreTaskId] = useState<string | null>(null);
@@ -130,7 +139,7 @@ function Shell() {
   return (
     <div className="w-screen h-screen overflow-hidden flex bg-zinc-950 text-zinc-200">
       {ui.toolbarPosition === 'left' && (
-        <IconRail view={view} onView={setView} theme={ui.theme} onToggleTheme={toggleTheme} />
+        <IconRail view={view} onView={setView} theme={ui.theme} onToggleTheme={toggleTheme} email={session.email} onLogout={onLogout} />
       )}
 
       <main className="flex-1 flex flex-col min-w-0">
@@ -212,12 +221,14 @@ function TopBar({ view }: { view: View }) {
 }
 
 function IconRail({
-  view, onView, theme, onToggleTheme,
+  view, onView, theme, onToggleTheme, email, onLogout,
 }: {
   view: View;
   onView: (v: View) => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  email: string;
+  onLogout: () => void;
 }) {
   const items: { id: View; icon: string; label: string }[] = [
     { id: 'dashboard', icon: 'layout-grid', label: 'Dashboard' },
@@ -257,6 +268,15 @@ function IconRail({
         className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800 transition-all duration-200 active:scale-95"
       >
         <Icon name={theme === 'dark' ? 'moon' : 'sun'} className="w-[18px] h-[18px]" />
+      </button>
+      <button
+        type="button"
+        onClick={onLogout}
+        title={`Sign out (${email})`}
+        aria-label={`Sign out — signed in as ${email}`}
+        className="w-10 h-10 rounded-lg flex items-center justify-center text-zinc-500 hover:text-rose-400 hover:bg-zinc-800 transition-all duration-200 active:scale-95 mt-1"
+      >
+        <Icon name="log-out" className="w-[18px] h-[18px]" />
       </button>
     </aside>
   );
