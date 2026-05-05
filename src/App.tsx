@@ -34,6 +34,7 @@ import { mapVault } from './lib/vaultMapper';
 import { BridgeProvider, useBridge } from './hooks/useCryptoBridge';
 import { AuthScreen } from './components/AuthScreen';
 import { SettingsModal } from './components/SettingsModal';
+import { FocusTheatre } from './components/FocusTheatre';
 import { TaskCard } from './components/TaskCard';
 import { TaskExpansionDrawer } from './components/TaskExpansionDrawer';
 import { EnhancedBookmarkHub } from './components/EnhancedBookmarkHub';
@@ -115,7 +116,7 @@ function Shell({
     brightness: 50,
     toolbarPosition: 'left',
     focusDuration: 25,
-    distractorOptions: [],
+    distractorOptions: ['Slack message', 'Email', 'Meeting ping', 'Phone call', 'Colleague interrupt'],
   });
 
   const toggleTheme = useCallback(() => {
@@ -149,6 +150,11 @@ function Shell({
   const drawerTask = useMemo(
     () => (drawerTaskId ? tasks.find((t) => t.id === drawerTaskId) ?? null : null),
     [drawerTaskId, tasks],
+  );
+
+  const theatreTask = useMemo(
+    () => (theatreTaskId ? tasks.find((t) => t.id === theatreTaskId) ?? null : null),
+    [theatreTaskId, tasks],
   );
 
   const activeTasks = useMemo(() => tasks.filter((t) => t.status === 'active'), [tasks]);
@@ -196,7 +202,12 @@ function Shell({
         )}
 
         {view === 'theatre' && (
-          <FocusTheatreStub taskId={theatreTaskId} onExit={() => { setTheatreTaskId(null); setView('focus'); }} />
+          <FocusTheatre
+            task={theatreTask}
+            focusDuration={ui.focusDuration}
+            distractorOptions={ui.distractorOptions}
+            onExit={() => { setTheatreTaskId(null); setView('focus'); }}
+          />
         )}
 
         {view === 'success' && (
@@ -815,26 +826,6 @@ function FocusOverview({
   );
 }
 
-function FocusTheatreStub({ taskId, onExit }: { taskId: string | null; onExit: () => void }) {
-  return (
-    <div className="flex-1 grid place-items-center bg-zinc-950">
-      <div className="text-center max-w-md">
-        <div className="w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center mx-auto mb-4">
-          <Icon name="play" className="w-6 h-6 text-violet-300" />
-        </div>
-        <h2 className="text-zinc-300 text-lg mb-1.5">Focus session: {taskId ?? '—'}</h2>
-        <p className="text-sm text-zinc-500 leading-relaxed mb-4">Theatre view stub — wire to the real timer module.</p>
-        <button
-          type="button"
-          onClick={onExit}
-          className="h-10 px-4 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-sm text-zinc-200 transition-colors"
-        >
-          Exit theatre
-        </button>
-      </div>
-    </div>
-  );
-}
 
 function StubView({ icon, title, body }: { icon: string; title: string; body: ReactNode }) {
   return (
