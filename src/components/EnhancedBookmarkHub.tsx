@@ -584,30 +584,21 @@ function Row({ resource, onOpen, onDelete }: {
 // ─── Favicon ───────────────────────────────────────────────────────────────────
 
 function FaviconChip({ domain }: { domain: string }) {
-  const [errored, setErrored] = useState(false);
-  const url = `https://www.google.com/s2/favicons?sz=64&domain=${encodeURIComponent(domain)}`;
-  if (errored) {
-    const hue = hashHue(domain || 'x');
-    return (
-      <div
-        className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
-        style={{ background: `oklch(0.55 0.12 ${hue})` }}
-        aria-hidden="true"
-      >
-        {(domain || '?')[0].toUpperCase()}
-      </div>
-    );
-  }
+  // PR-1.5b: dropped the https://www.google.com/s2/favicons fetch. Every
+  // saved domain was being sent to Google on every render, which contradicts
+  // the Zero-Knowledge product positioning. The colored-letter chip below is
+  // the fallback that already existed for failed-fetch cases — now it's the
+  // only path. Future PR can proxy through /api/fetch-meta if real favicons
+  // are ever desired without leaking the user's bookmark list.
+  const hue = hashHue(domain || 'x');
   return (
-    <img
-      src={url}
-      alt=""
-      onError={() => setErrored(true)}
-      className="w-5 h-5 rounded shrink-0"
-      loading="lazy"
-      decoding="async"
-      referrerPolicy="no-referrer"
-    />
+    <div
+      className="w-6 h-6 rounded-md flex items-center justify-center text-[11px] font-semibold text-white shrink-0"
+      style={{ background: `oklch(0.55 0.12 ${hue})` }}
+      aria-hidden="true"
+    >
+      {(domain || '?')[0].toUpperCase()}
+    </div>
   );
 }
 

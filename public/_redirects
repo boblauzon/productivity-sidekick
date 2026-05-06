@@ -1,3 +1,10 @@
-# SPA catch-all — serve index.html for client-side routing
-# API routes are handled by Pages Functions (functions/ directory)
-/*  /index.html  200
+# Productivity Sidekick — Cloudflare Pages redirects file
+#
+# PR-1.5b: removed the previous "/*  /index.html  200" SPA fallback rule.
+# Cloudflare flagged it as an infinite loop on every deploy, and Pages
+# already serves index.html for / by default. The app uses local React
+# state for view routing — no client-side router, no deep links — so SPA
+# fallback was unnecessary.
+#
+# This file is intentionally left in place (rather than deleted) to make
+# it obvious WHERE Pages redirect rules go if we ever need them.
