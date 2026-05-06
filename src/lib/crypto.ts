@@ -76,15 +76,25 @@ function parseRecoveryKey(formatted: string): Uint8Array<ArrayBuffer> {
 
 async function deriveMasterKey(password: string, email: string): Promise<CryptoKey> {
   const salt = enc(email.toLowerCase().trim());
-  const passwordKey = await crypto.subtle.importKey(
-    'raw', enc(password), 'PBKDF2', false, ['deriveBits'],
-  );
-  const masterBits = await crypto.subtle.deriveBits(
-    { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
-    passwordKey,
-    AES_KEY_BITS,
-  );
-  return crypto.subtle.importKey('raw', masterBits, 'HKDF', false, ['deriveBits', 'deriveKey']);
+  // We can't zero the password STRING (immutable, GC-managed), but we CAN
+  // zero the byte buffer derived from it. Doesn't help if the engine kept
+  // an internal copy, but it reduces the immediate heap surface area.
+  // Caller in authClient.ts also reassigns the source string to '' to drop
+  // its reference — this is a defense-in-depth pair.
+  const passwordBytes = enc(password);
+  try {
+    const passwordKey = await crypto.subtle.importKey(
+      'raw', passwordBytes, 'PBKDF2', false, ['deriveBits'],
+    );
+    const masterBits = await crypto.subtle.deriveBits(
+      { name: 'PBKDF2', salt, iterations: PBKDF2_ITERATIONS, hash: 'SHA-256' },
+      passwordKey,
+      AES_KEY_BITS,
+    );
+    return crypto.subtle.importKey('raw', masterBits, 'HKDF', false, ['deriveBits', 'deriveKey']);
+  } finally {
+    passwordBytes.fill(0);
+  }
 }
 
 async function hkdfDeriveKey(masterKey: CryptoKey, info: string, usage: KeyUsage[]): Promise<CryptoKey> {

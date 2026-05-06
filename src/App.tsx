@@ -9,18 +9,15 @@
 //                                  empty arrays until the worker resolves
 //   • Drawer / modal overlays   — focus-trapped, keyed by id
 //
-// Removed vs. prototype:
-//   • window.S vault and ui state (now in worker / React state)
-//   • window.EventBus (replaced by bridge.request + bridge.subscribe)
-//   • window.Icon / window.Button / window.useAppState / window.useEventBus
-//   • The Toaster's `window.addEventListener('__bus_log', ...)` — no global bus
-//   • The TopBar / IconRail are kept inline here for clarity but could move
-//     to their own files in a follow-up; they're trivial dumb components.
-//
-// Empty-state contract:
-//   When the bridge returns [] (e.g. against the staging worker stub), every
-//   surface renders its empty state. The UI never shows fabricated tasks
-//   or resources. This is the test for "no mock data leaked through."
+// PR-1.5 changes:
+//   • Vault decrypt failure no longer silently falls through to an empty
+//     bridge. Instead, we surface a friendly error screen with Retry / Sign
+//     out so the user understands why they don't see their data.
+//   • Vault SAVE failures now propagate to a non-dismissible banner via the
+//     onSaveError / onSaveRecovered callbacks on MainThreadCryptoBridge.
+//   • Dashboard's `visible` array is memoized — previously it was rebuilt
+//     on every render, defeating the downstream useMemo chain and forcing
+//     all TaskCard memos to re-render on every keystroke.
 
 import {
   useCallback, useEffect, useMemo, useRef, useState,
@@ -47,18 +44,24 @@ export default function App() {
   const [session, setSession] = useState<AuthSession | null>(null);
   const [bridge, setBridge] = useState<CryptoBridge | null>(null);
   const [loadingVault, setLoadingVault] = useState(false);
+  const [vaultLoadError, setVaultLoadError] = useState<Error | null>(null);
+  const [saveError, setSaveError] = useState<Error | null>(null);
   const vaultVersionRef = useRef(0);
 
   const handleLogout = useCallback(() => {
     bridge?.dispose();
     setBridge(null);
     setSession(null);
+    setVaultLoadError(null);
+    setSaveError(null);
     vaultVersionRef.current = 0;
   }, [bridge]);
 
   const handleAuthenticated = useCallback(async (s: AuthSession) => {
     setSession(s);
     setLoadingVault(true);
+    setVaultLoadError(null);
+    setSaveError(null);
     try {
       const { data, version } = await loadVault(s);
       vaultVersionRef.current = version;
@@ -69,13 +72,21 @@ export default function App() {
         vaultVersionRef.current = result.version;
       };
 
-      setBridge(new MainThreadCryptoBridge(tasks, resources, saveFn));
-    } catch {
-      const saveFn = async (vaultData: unknown) => {
-        const result = await saveVault(s, vaultData, vaultVersionRef.current);
-        vaultVersionRef.current = result.version;
-      };
-      setBridge(new MainThreadCryptoBridge([], [], saveFn));
+      // Wire the bridge's save-failure callbacks to React state so the user
+      // can SEE when something goes wrong with persistence. Without this,
+      // session expiry / network failures / OCC conflicts are silently
+      // swallowed and the user only finds out by reloading and discovering
+      // missing work.
+      setBridge(new MainThreadCryptoBridge(tasks, resources, saveFn, {
+        onSaveError: setSaveError,
+        onSaveRecovered: () => setSaveError(null),
+      }));
+    } catch (err) {
+      // Critical: do NOT silently fall through to an empty bridge. That path
+      // means the user works against a phantom vault, edits get rejected
+      // silently by OCC on save, and trust is broken when they refresh.
+      // Show a clear error screen instead.
+      setVaultLoadError(err instanceof Error ? err : new Error(String(err)));
     } finally {
       setLoadingVault(false);
     }
@@ -90,24 +101,118 @@ export default function App() {
       <div className="min-h-screen bg-zinc-950 flex items-center justify-center">
         <div className="flex items-center gap-3 text-zinc-400">
           <span className="w-5 h-5 rounded-full border-2 border-zinc-700 border-t-violet-400 animate-spin" />
-          <span className="text-sm">Decrypting vault…</span>
+          <span className="text-sm">Loading your work…</span>
         </div>
       </div>
     );
   }
 
-  if (!bridge) return null; // shouldn't reach here (loading spinner covers this)
+  if (vaultLoadError) {
+    return (
+      <VaultLoadErrorScreen
+        error={vaultLoadError}
+        onRetry={() => session && handleAuthenticated(session)}
+        onSignOut={handleLogout}
+      />
+    );
+  }
+
+  if (!bridge) return null;
 
   return (
     <BridgeProvider bridge={bridge}>
-      <Shell session={session} onLogout={handleLogout} />
+      <Shell session={session} onLogout={handleLogout} saveError={saveError} />
     </BridgeProvider>
+  );
+}
+
+// ─── Vault Load Error Screen ───────────────────────────────────────────────────
+// Shown when loadVault() throws during the post-login flow. Friendly copy
+// per the PR-1.5 product requirement — no jargon visible by default, with
+// technical details collapsed for debugging.
+
+function VaultLoadErrorScreen({
+  error, onRetry, onSignOut,
+}: { error: Error; onRetry: () => void; onSignOut: () => void }) {
+  return (
+    <div className="min-h-screen bg-zinc-950 flex items-center justify-center p-8">
+      <div className="max-w-md text-center">
+        <div className="w-12 h-12 rounded-full bg-rose-500/15 border border-rose-500/30 flex items-center justify-center mx-auto mb-5">
+          <Icon name="alert-triangle" className="w-5 h-5 text-rose-300" />
+        </div>
+        <h1 className="text-zinc-100 text-xl mb-3 font-medium tracking-tight">
+          We couldn't open your work
+        </h1>
+        <p className="text-sm text-zinc-400 leading-relaxed mb-7">
+          Don't worry — your data is still safe and nothing has been changed.
+          This usually fixes itself with a quick retry.
+        </p>
+        <div className="flex gap-2 justify-center">
+          <button
+            type="button"
+            onClick={onRetry}
+            className="h-10 px-5 rounded-lg bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-colors active:scale-[0.98]"
+          >
+            Try again
+          </button>
+          <button
+            type="button"
+            onClick={onSignOut}
+            className="h-10 px-5 rounded-lg bg-zinc-900 border border-zinc-800 hover:border-zinc-700 text-zinc-200 text-sm transition-colors active:scale-[0.98]"
+          >
+            Sign out
+          </button>
+        </div>
+        <details className="mt-8 text-left">
+          <summary className="text-[11px] text-zinc-600 cursor-pointer hover:text-zinc-400 select-none">
+            Technical details
+          </summary>
+          <pre className="mt-2 text-[11px] text-zinc-500 bg-zinc-900 border border-zinc-800 rounded-lg p-3 overflow-auto whitespace-pre-wrap">
+            {error.message}
+          </pre>
+        </details>
+      </div>
+    </div>
+  );
+}
+
+// ─── Save Error Banner ─────────────────────────────────────────────────────────
+// Persistent (non-dismissible) banner shown when the bridge has reported a
+// save failure. Auto-clears via onSaveRecovered when the next save succeeds.
+//
+// Copy is generic on purpose — we don't want to display error.message to
+// the user (it's full of jargon like "Version conflict" or HTTP status
+// codes) but we DO want to give them clear next steps.
+
+function SaveErrorBanner() {
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      className="bg-rose-500/15 border-b border-rose-500/30 px-6 py-3 flex items-start gap-3 text-sm text-rose-200 shrink-0"
+    >
+      <Icon name="alert-triangle" className="w-4 h-4 shrink-0 mt-0.5" />
+      <div className="flex-1 leading-relaxed">
+        <div className="font-medium text-rose-100">
+          Your recent changes might not be saved
+        </div>
+        <div className="text-[13px] text-rose-200/90 mt-0.5">
+          To keep your work safe, please download a backup from Settings → Data → Download backup, then sign out and sign back in.
+        </div>
+      </div>
+    </div>
   );
 }
 
 // ─── Shell ─────────────────────────────────────────────────────────────────────
 
-function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => void }) {
+function Shell({
+  session, onLogout, saveError,
+}: {
+  session: AuthSession;
+  onLogout: () => void;
+  saveError: Error | null;
+}) {
   const [view, setView] = useState<View>('focus');
   const [drawerTaskId, setDrawerTaskId] = useState<string | null>(null);
   const [theatreTaskId, setTheatreTaskId] = useState<string | null>(null);
@@ -178,74 +283,77 @@ function Shell({ session, onLogout }: { session: AuthSession; onLogout: () => vo
   }, [resources]);
 
   return (
-    <div className="w-screen h-screen overflow-hidden flex bg-zinc-950 text-zinc-200">
-      {ui.toolbarPosition !== 'right' && (
-        <IconRail
-          view={view}
-          onView={setView}
-          theme={ui.theme}
-          onToggleTheme={toggleTheme}
-          onShowSettings={() => setSettingsOpen(true)}
-        />
-      )}
-
-      <main className="flex-1 flex flex-col min-w-0">
-        {view !== 'theatre' && <TopBar view={view} />}
-
-        {view === 'dashboard' && (
-          <Dashboard
-            activeTasks={activeTasks}
-            loading={tasksQuery.loading}
-            error={tasksQuery.error}
-            workspaceProfile={ui.workspaceProfile}
-            onOpenTask={onOpenTask}
-            onStartFocus={onStartFocus}
-            onSetProfile={(workspaceProfile) => setUi((p) => ({ ...p, workspaceProfile }))}
+    <div className="w-screen h-screen overflow-hidden flex flex-col bg-zinc-950 text-zinc-200">
+      {saveError && <SaveErrorBanner />}
+      <div className="flex-1 flex overflow-hidden">
+        {ui.toolbarPosition !== 'right' && (
+          <IconRail
+            view={view}
+            onView={setView}
+            theme={ui.theme}
+            onToggleTheme={toggleTheme}
+            onShowSettings={() => setSettingsOpen(true)}
           />
         )}
 
-        {view === 'focus' && (
-          <FocusOverview
-            activeTasks={activeTasks}
-            loading={tasksQuery.loading}
-            onOpenTask={onOpenTask}
-            onStartFocus={onStartFocus}
-            focusDuration={ui.focusDuration}
+        <main className="flex-1 flex flex-col min-w-0">
+          {view !== 'theatre' && <TopBar view={view} />}
+
+          {view === 'dashboard' && (
+            <Dashboard
+              activeTasks={activeTasks}
+              loading={tasksQuery.loading}
+              error={tasksQuery.error}
+              workspaceProfile={ui.workspaceProfile}
+              onOpenTask={onOpenTask}
+              onStartFocus={onStartFocus}
+              onSetProfile={(workspaceProfile) => setUi((p) => ({ ...p, workspaceProfile }))}
+            />
+          )}
+
+          {view === 'focus' && (
+            <FocusOverview
+              activeTasks={activeTasks}
+              loading={tasksQuery.loading}
+              onOpenTask={onOpenTask}
+              onStartFocus={onStartFocus}
+              focusDuration={ui.focusDuration}
+            />
+          )}
+
+          {view === 'theatre' && (
+            <FocusTheatre
+              task={theatreTask}
+              focusDuration={ui.focusDuration}
+              distractorOptions={ui.distractorOptions}
+              onExit={() => { setTheatreTaskId(null); setView('focus'); }}
+            />
+          )}
+
+          {view === 'success' && (
+            <StubView icon="trophy" title="Success Analytics" body="Streaks, flow analytics, and weekly wins." />
+          )}
+
+          {view === 'bookmarks' && (
+            <EnhancedBookmarkHub
+              resources={resources}
+              buckets={resourceBuckets}
+              activeTasks={activeTasks}
+            />
+          )}
+        </main>
+
+        {ui.toolbarPosition === 'right' && (
+          <IconRail
+            view={view}
+            onView={setView}
+            theme={ui.theme}
+            onToggleTheme={toggleTheme}
+            onShowSettings={() => setSettingsOpen(true)}
+            side="right"
           />
         )}
-
-        {view === 'theatre' && (
-          <FocusTheatre
-            task={theatreTask}
-            focusDuration={ui.focusDuration}
-            distractorOptions={ui.distractorOptions}
-            onExit={() => { setTheatreTaskId(null); setView('focus'); }}
-          />
-        )}
-
-        {view === 'success' && (
-          <StubView icon="trophy" title="Success Analytics" body="Streaks, flow analytics, and weekly wins." />
-        )}
-
-        {view === 'bookmarks' && (
-          <EnhancedBookmarkHub
-            resources={resources}
-            buckets={resourceBuckets}
-            activeTasks={activeTasks}
-          />
-        )}
-      </main>
-
-      {ui.toolbarPosition === 'right' && (
-        <IconRail
-          view={view}
-          onView={setView}
-          theme={ui.theme}
-          onToggleTheme={toggleTheme}
-          onShowSettings={() => setSettingsOpen(true)}
-          side="right"
-        />
-      )}
+      </div>
 
       <TaskExpansionDrawer
         task={drawerTask}
@@ -389,7 +497,15 @@ function Dashboard({
     medium: activeTasks.filter((t) => t.energyLevel === 'medium').length,
     low: activeTasks.filter((t) => t.energyLevel === 'low').length,
   }), [activeTasks]);
-  const visible = filter === 'all' ? activeTasks : activeTasks.filter((t) => t.energyLevel === filter);
+
+  // PR-1.5 fix: previously this was rebuilt on every render, which meant
+  // byBucket's useMemo dependency was a fresh array reference every time
+  // and the entire memo chain was defeated. Wrapping in useMemo here lets
+  // the downstream TaskCard.memo comparator actually skip work.
+  const visible = useMemo(
+    () => filter === 'all' ? activeTasks : activeTasks.filter((t) => t.energyLevel === filter),
+    [activeTasks, filter],
+  );
 
   const byBucket = useMemo(() => {
     const grouped: Record<string, Task[]> = {};

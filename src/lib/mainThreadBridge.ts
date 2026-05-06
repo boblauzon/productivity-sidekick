@@ -4,7 +4,7 @@
 // after every mutation. Replaces the stub worker for the current build.
 //
 // Future: replace this with a production Web Worker enclave that does
-// Argon2id + AES-GCM inside the worker isolate.
+// Argon2id + AES-GCM inside the worker isolate (PR-4).
 
 import type { CryptoBridge, BridgeChannel, BridgeRequest, Unsubscribe } from './cryptoBridge';
 import { BridgeError } from './cryptoBridge';
@@ -13,6 +13,27 @@ import { sanitizeUrl, safeDomain, sanitizeText } from './sanitize';
 import { serializeVault } from './vaultMapper';
 
 type SaveFn = (data: unknown) => Promise<void>;
+
+/**
+ * Constructor options for surfacing bridge state up to the React tree.
+ *
+ * Both callbacks are optional but PR-1.5 wires them in App.tsx so users can
+ * SEE when their changes aren't being saved. Without these, save failures
+ * (session expiry, network, OCC conflicts) are silently swallowed and the
+ * user only finds out when they reload and discover lost work.
+ */
+export interface MainThreadCryptoBridgeOptions {
+  /**
+   * Fired when an encrypted vault save fails. Wired in App.tsx to surface
+   * a non-dismissible banner.
+   */
+  onSaveError?: (err: Error) => void;
+  /**
+   * Fired the first time a save succeeds after a previous failure, so the
+   * banner can clear.
+   */
+  onSaveRecovered?: () => void;
+}
 
 function uid(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
@@ -42,12 +63,20 @@ export class MainThreadCryptoBridge implements CryptoBridge {
   private sessions: FocusSession[] = [];
   private listeners = new Map<BridgeChannel, Set<() => void>>();
   private saveFn: SaveFn;
+  private opts: MainThreadCryptoBridgeOptions;
+  private inErrorState = false;
   private disposed = false;
 
-  constructor(tasks: Task[], resources: Resource[], saveFn: SaveFn) {
+  constructor(
+    tasks: Task[],
+    resources: Resource[],
+    saveFn: SaveFn,
+    opts: MainThreadCryptoBridgeOptions = {},
+  ) {
     this.tasks = [...tasks];
     this.resources = [...resources];
     this.saveFn = saveFn;
+    this.opts = opts;
   }
 
   request = async <R extends BridgeRequest>(req: R): Promise<ResponseFor<R>> => {
@@ -244,7 +273,7 @@ export class MainThreadCryptoBridge implements CryptoBridge {
         return updated;
       }
 
-      // ── Sessions (read-only for now) ────────────────────────────────────────
+      // ── Sessions (read-only for now; PR-1.6 will persist these) ─────────────
       case 'sessions.list':
         return this.sessions;
 
@@ -264,11 +293,36 @@ export class MainThreadCryptoBridge implements CryptoBridge {
     this.listeners.get(channel)?.forEach((fn) => { try { fn(); } catch { /* ignored */ } });
   }
 
+  /**
+   * Persists the in-memory state to the encrypted vault API.
+   *
+   * Failure modes that callers MUST be told about:
+   *   • 401 — session token expired (default 7-day TTL on the backend)
+   *   • 409 — OCC version conflict (another tab/device wrote in between)
+   *   • Network — offline, DNS failure, Cloudflare down
+   *
+   * The previous implementation logged to console and dropped the error,
+   * which silently lost user data. This version surfaces the failure to
+   * the React tree via the onSaveError callback, and clears it via
+   * onSaveRecovered when the next save succeeds.
+   *
+   * Notes on what we DON'T log to the console:
+   *   • The vault payload itself — that's plaintext task data
+   *   • The error stack — error.message is enough for diagnosis and
+   *     doesn't risk leaking surrounding context
+   */
   private async persist(): Promise<void> {
     try {
       await this.saveFn(serializeVault(this.tasks, this.resources));
+      if (this.inErrorState) {
+        this.inErrorState = false;
+        this.opts.onSaveRecovered?.();
+      }
     } catch (err) {
-      console.error('[MainThreadBridge] vault save failed:', err);
+      const error = err instanceof Error ? err : new Error(String(err));
+      console.error('[MainThreadBridge] vault save failed:', error.message);
+      this.inErrorState = true;
+      this.opts.onSaveError?.(error);
     }
   }
 }
